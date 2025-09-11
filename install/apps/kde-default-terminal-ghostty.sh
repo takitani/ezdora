@@ -12,7 +12,17 @@ if ! command -v ghostty >/dev/null 2>&1 && ! rpm -q ghostty >/dev/null 2>&1; the
   exit 0
 fi
 
+# Try to detect Ghostty desktop ID dynamically; fallback to common ID
 APP_ID="dev.kdrag0n.Ghostty.desktop"
+for dir in "$HOME/.local/share/applications" /usr/share/applications; do
+  if [ -d "$dir" ]; then
+    CANDIDATE=$(grep -RIl "^Exec=.*ghostty" "$dir" 2>/dev/null | head -n1)
+    if [ -n "$CANDIDATE" ]; then
+      APP_ID="$(basename "$CANDIDATE")"
+      break
+    fi
+  fi
+done
 KW=kwriteconfig6
 if ! command -v kwriteconfig6 >/dev/null 2>&1; then
   if command -v kwriteconfig5 >/dev/null 2>&1; then
@@ -37,12 +47,12 @@ $KW --file kglobalshortcutsrc --group org.kde.konsole.desktop --key New "none,no
 # Map Ghostty launch to Ctrl+Alt+T
 $KW --file kglobalshortcutsrc --group "$APP_ID" --key _launch "Ctrl+Alt+T,none,Launch Ghostty" || true
 
-# Reload global shortcuts if tools are available (Plasma 6)
-if command -v kquitapp6 >/dev/null 2>&1; then
-  kquitapp6 kglobalaccel || true
-fi
+# Reload or restart global shortcuts service quietly
 if command -v kglobalaccel6 >/dev/null 2>&1; then
-  nohup kglobalaccel6 >/dev/null 2>&1 & disown || true
+  # Prefer --replace; fall back to restart sequence
+  nohup kglobalaccel6 --replace >/dev/null 2>&1 & disown || true
+elif command -v kglobalaccel5 >/dev/null 2>&1; then
+  nohup kglobalaccel5 --replace >/dev/null 2>&1 & disown || true
 fi
 
 echo "[ezdora][kde] Terminal padrão e atalho Ctrl+Alt+T ajustados para Ghostty. Se não surtir efeito imediato, relogue."
