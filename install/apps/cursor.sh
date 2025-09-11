@@ -24,10 +24,12 @@ download_rpm() {
 }
 
 URLS=()
+# 1) User-provided direct RPM link (if any)
 if [ -n "${CURSOR_RPM_URL:-}" ]; then URLS+=("$CURSOR_RPM_URL"); fi
-URLS+=(
-  "https://downloader.cursor.sh/linux/rpm"
-)
+# 2) Known-good fallback RPM (pinned)
+URLS+=("https://downloads.cursor.com/production/2f2737de9aa376933d975ae30290447c910fdf46/linux/x64/rpm/x86_64/cursor-1.5.11.el8.x86_64.rpm")
+# 3) Generic downloader endpoint
+URLS+=("https://downloader.cursor.sh/linux/rpm")
 
 DL_OK=0
 for u in "${URLS[@]}"; do
@@ -46,8 +48,8 @@ fi
 
 if [ $DL_OK -eq 0 ]; then
   echo "[ezdora][cursor] Não foi possível baixar o RPM automaticamente."
-  echo "[ezdora][cursor] Baixe manualmente pelo navegador o .rpm do Cursor e deixe em ~/Downloads."
-  echo "[ezdora][cursor] Ou exporte CURSOR_RPM_URL=\"<link-direto-.rpm>\" e execute novamente."
+  echo "[ezdora][cursor] Baixe manualmente o .rpm do Cursor e salve em ~/Downloads, ou"
+  echo "[ezdora][cursor] exporte CURSOR_RPM_URL=\"<link-direto-.rpm>\" e execute novamente."
   exit 1
 fi
 
