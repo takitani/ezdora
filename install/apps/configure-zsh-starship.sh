@@ -29,6 +29,15 @@ if ! grep -q "starship init zsh" "$ZSHRC" 2>/dev/null; then
   } >> "$ZSHRC"
 fi
 
+# Ensure mise activation for zsh
+if ! grep -q "mise activate zsh" "$ZSHRC" 2>/dev/null; then
+  {
+    echo ''
+    echo '# EzDora: mise activation'
+    echo 'eval "$(mise activate zsh)"'
+  } >> "$ZSHRC"
+fi
+
 # Preserve history behavior (append/share; never truncate)
 if ! grep -q "EzDora: Zsh history" "$ZSHRC" 2>/dev/null; then
   {
@@ -137,5 +146,13 @@ if [ "$LOGIN_SHELL" != "$ZSH_PATH" ]; then
       echo 'eval "$(starship init bash)"'
     } >> "$BASHRC"
     echo "[ezdora][bash] Starship habilitado no bash como fallback."
+  fi
+
+  if ! grep -q "mise activate bash" "$BASHRC" 2>/dev/null; then
+    {
+      echo ''
+      echo '# EzDora: mise activation (bash fallback)'
+      echo 'eval "$(mise activate bash)"'
+    } >> "$BASHRC"
   fi
 fi
