@@ -74,6 +74,17 @@ if ! grep -q "EzDora: Zsh history" "$ZSHRC" 2>/dev/null; then
   } >> "$ZSHRC"
 fi
 
+# Fix common keybindings (Backspace/Delete) em terminais diversos (ex.: Delete imprimindo ~)
+if ! grep -q "EzDora: Zsh keybindings" "$ZSHRC" 2>/dev/null; then
+  {
+    echo ''
+    echo '# EzDora: Zsh keybindings (consertar Backspace/Delete)'
+    echo "bindkey '^?' backward-delete-char"        # Backspace
+    echo "bindkey '^H' backward-delete-char"        # Backspace alt
+    echo "bindkey '\\e[3~' delete-char"            # Delete
+  } >> "$ZSHRC"
+fi
+
 # Starship config (rich prompt). If the file não existe ou contém a marca EzDora, escrevemos o padrão.
 mkdir -p "$HOME/.config"
 STARCONF="$HOME/.config/starship.toml"

@@ -10,3 +10,36 @@ for script in "$SCRIPT_DIR/apps"/*.sh; do
   bash "$script"
 done
 
+## Checagens pós-instalação e oferta de reinício
+# Caso o usuário tenha sido adicionado ao grupo docker nesta sessão,
+# a sessão atual ainda não refletirá o grupo. Oferecer reboot.
+REBOOT_NEEDED=0
+
+# Detecta se o usuário está listado no grupo docker, mas não tem grupo efetivo
+if getent group docker >/dev/null 2>&1; then
+  if getent group docker | grep -qE "(^|,)${USER}($|,)"; then
+    if ! id -nG "$USER" | tr ' ' '\n' | grep -qx docker; then
+      REBOOT_NEEDED=1
+      echo "[ezdora][post] Usuário adicionado ao grupo 'docker'. É recomendável reiniciar a sessão."
+    fi
+  fi
+fi
+
+if [ "$REBOOT_NEEDED" -eq 1 ]; then
+  prompt() {
+    local msg="$1"
+    if command -v gum >/dev/null 2>&1; then
+      gum confirm "$msg"
+    else
+      read -r -p "$msg [y/N] " ans
+      [[ ${ans:-} =~ ^[Yy]$ ]]
+    fi
+  }
+
+  if prompt "Reiniciar o sistema agora para aplicar totalmente as alterações?"; then
+    echo "[ezdora][post] Reiniciando…"
+    sudo systemctl reboot || sudo reboot || echo "[ezdora][post] Falha ao reiniciar automaticamente. Reinicie manualmente."
+  else
+    echo "[ezdora][post] Ok. Reinicie depois para aplicar as alterações de grupo."
+  fi
+fi
