@@ -53,5 +53,25 @@ else
   echo "font-family = \"$CHOICE\"" >> "$CFG_FILE"
 fi
 
-echo "[ezdora][fonts] Ghostty configurado para usar: $CHOICE"
+# Font size selection
+SIZES=("11" "12" "13" "14" "15" "16")
+SIZE_DEFAULT="13"
+SIZE_CHOICE=""
 
+if command -v gum >/dev/null 2>&1; then
+  SIZE_CHOICE=$(gum choose --header "Selecione o tamanho da fonte" --selected "$SIZE_DEFAULT" "${SIZES[@]}")
+elif command -v fzf >/dev/null 2>&1; then
+  SIZE_CHOICE=$(printf '%s\n' "${SIZES[@]}" | FZF_DEFAULT_OPTS='--height=10 --prompt="Tamanho> "' fzf || true)
+fi
+
+if [ -z "${SIZE_CHOICE:-}" ]; then
+  SIZE_CHOICE="$SIZE_DEFAULT"
+fi
+
+if [ -f "$CFG_FILE" ] && grep -q '^font-size\s*=\s*' "$CFG_FILE"; then
+  sed -i "s/^font-size\s*=.*/font-size = $SIZE_CHOICE/" "$CFG_FILE"
+else
+  echo "font-size = $SIZE_CHOICE" >> "$CFG_FILE"
+fi
+
+echo "[ezdora][fonts] Ghostty configurado com fonte '$CHOICE' tamanho $SIZE_CHOICE"
