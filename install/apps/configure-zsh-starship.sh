@@ -29,18 +29,78 @@ if ! rg -n "starship init zsh" "$ZSHRC" >/dev/null 2>&1; then
   } >> "$ZSHRC"
 fi
 
-# Minimal Starship config if not present
+# Starship config (rich prompt). If the file não existe ou contém a marca EzDora, escrevemos o padrão.
 mkdir -p "$HOME/.config"
 STARCONF="$HOME/.config/starship.toml"
-if [ ! -f "$STARCONF" ]; then
+if [ ! -f "$STARCONF" ] || grep -q "^# EzDora" "$STARCONF" 2>/dev/null; then
   cat > "$STARCONF" <<'EOF'
-# EzDora minimal Starship config
+# EzDora Starship config (rich prompt)
 add_newline = true
+command_timeout = 1000
+
+format = """
+$time$directory$git_branch$git_status$nodejs$python$rust$golang$docker_context$package$cmd_duration
+$character
+"""
+
+[time]
+disabled = false
+format = "[ $time]($style) "
+time_format = "%H:%M"
+
+[directory]
+truncation_length = 3
+truncation_symbol = "…/"
+style = "bold cyan"
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "bold purple"
+format = "([$all_status$ahead_behind]($style)) "
+conflicted = "≠"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+stashed = "≡"
+modified = "✎${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+untracked = "?${count}"
+
+[nodejs]
+symbol = " "
+format = "[$symbol($version )]($style)"
+
+[python]
+symbol = " "
+format = "[$symbol($version )]($style)"
+
+[rust]
+symbol = " "
+format = "[$symbol($version )]($style)"
+
+[golang]
+symbol = " "
+format = "[$symbol($version )]($style)"
+
+[docker_context]
+symbol = " "
+format = "[$symbol$context]($style) "
+
+[package]
+disabled = true
+
+[cmd_duration]
+min_time = 2000
+format = "[⏱ $duration]($style) "
+
 [character]
 success_symbol = "[➜](bold green) "
 error_symbol = "[➜](bold red) "
-[package]
-disabled = true
 EOF
 fi
 
