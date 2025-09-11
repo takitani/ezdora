@@ -12,6 +12,32 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 0
 fi
 
+# Configure npm to use user directory for global packages (idempotent)
+NPM_PREFIX="$HOME/.npm-global"
+CURRENT_PREFIX=$(npm config get prefix 2>/dev/null || echo "")
+
+if [ "$CURRENT_PREFIX" != "$NPM_PREFIX" ]; then
+  echo "[ezdora][ai-cli] Configurando npm para usar diretório do usuário..."
+  mkdir -p "$NPM_PREFIX"
+  npm config set prefix "$NPM_PREFIX"
+  
+  # Add to PATH in current shell
+  export PATH="$NPM_PREFIX/bin:$PATH"
+  
+  # Add to shell configs if not present
+  for RC_FILE in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$RC_FILE" ]; then
+      if ! grep -q "export PATH=.*\.npm-global/bin" "$RC_FILE"; then
+        echo "" >> "$RC_FILE"
+        echo "# npm global packages" >> "$RC_FILE"
+        echo "export PATH=\"\$HOME/.npm-global/bin:\$PATH\"" >> "$RC_FILE"
+      fi
+    fi
+  done
+  
+  echo "[ezdora][ai-cli] npm configurado para usar: $NPM_PREFIX"
+fi
+
 # Map packages to expected bin names for idempotency checks
 PKGS=("@openai/codex" "@anthropic-ai/claude-code" "@google/gemini-cli")
 BINS=("codex" "claude" "gemini")
