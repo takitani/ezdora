@@ -51,7 +51,36 @@ if [ "$dl_ok" = "1" ]; then
   fi
 fi
 
+# 3) Se usuário fornecer caminho local via env, tenta instalar
+if [ -n "${AWS_VPN_RPM_PATH:-}" ] && [ -f "${AWS_VPN_RPM_PATH}" ]; then
+  echo "[ezdora][dnf-awsvpnclient] Instalando a partir de arquivo local: ${AWS_VPN_RPM_PATH}"
+  if sudo dnf install -y "${AWS_VPN_RPM_PATH}"; then
+    echo "[ezdora][dnf-awsvpnclient] Concluído (via caminho local)."
+    exit 0
+  fi
+fi
+
+# 4) Procura em ~/Downloads por um RPM do AWS VPN Client já baixado
+DL_DIR="$HOME/Downloads"
+if [ -d "$DL_DIR" ]; then
+  candidate=$(ls -1t "$DL_DIR"/*AWS*VPN*Client*.rpm 2>/dev/null | head -n1 || true)
+  if [ -n "${candidate:-}" ] && [ -f "$candidate" ]; then
+    echo "[ezdora][dnf-awsvpnclient] Encontrado RPM em Downloads: $candidate"
+    if sudo dnf install -y "$candidate"; then
+      echo "[ezdora][dnf-awsvpnclient] Concluído (via Downloads)."
+      exit 0
+    fi
+  fi
+fi
+
+# 5) Último recurso: abre página oficial para download manual
+page="https://aws.amazon.com/vpn/client-vpn-download/"
 echo "[ezdora][dnf-awsvpnclient] Falha ao obter o RPM automaticamente." >&2
-echo "[ezdora][dnf-awsvpnclient] Baixe manualmente do site oficial e instale com: sudo dnf install ./AWS_VPN_Client.rpm" >&2
-echo "[ezdora][dnf-awsvpnclient] Página: https://aws.amazon.com/vpn/client-vpn-download/" >&2
+echo "[ezdora][dnf-awsvpnclient] Abrindo a página oficial para download: $page" >&2
+if command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "$page" >/dev/null 2>&1 || true
+elif command -v gio >/dev/null 2>&1; then
+  gio open "$page" >/dev/null 2>&1 || true
+fi
+echo "[ezdora][dnf-awsvpnclient] Após baixar, reexecute: bash install/apps/dnf-awsvpnclient.sh" >&2
 exit 1
