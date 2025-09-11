@@ -15,21 +15,60 @@ if is_installed; then
   exit 0
 fi
 
-# URL oficial (AWS CloudFront)
-AWS_VPN_RPM_URL="${AWS_VPN_RPM_URL:-https://d20adtppz83p9s.cloudfront.net/GTK/latest/x86_64/AWS_VPN_Client.rpm}"
+configure_dotnet_globalization() {
+  # Cria drop-in para o serviço (melhor que editar arquivo vendor)
+  local unit="awsvpnclient.service"
+  local drop_dir="/etc/systemd/system/${unit}.d"
+  local drop_file="${drop_dir}/override.conf"
+
+  sudo mkdir -p "$drop_dir"
+  if [ ! -f "$drop_file" ] || ! grep -q "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT" "$drop_file" 2>/dev/null; then
+    echo "[ezdora][dnf-awsvpnclient] Aplicando override de systemd para DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1"
+    sudo tee "$drop_file" >/dev/null <<'EOF'
+[Service]
+Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+EOF
+    sudo systemctl daemon-reload || true
+    # Reinicia se o serviço existir/estiver ativo
+    if systemctl status "$unit" >/dev/null 2>&1; then
+      sudo systemctl restart "$unit" || true
+    fi
+  fi
+}
 
 # Dependências comuns (best-effort)
 sudo dnf install -y libappindicator-gtk3 || true
 
-# 1) Tenta instalar direto pela URL (dnf)
+# 1) Método recomendado para Fedora: COPR vorona/aws-rpm-packages
+if ! rpm -q awsvpnclient >/dev/null 2>&1; then
+  echo "[ezdora][dnf-awsvpnclient] Habilitando COPR vorona/aws-rpm-packages…"
+  if sudo dnf copr enable -y vorona/aws-rpm-packages; then
+    echo "[ezdora][dnf-awsvpnclient] Instalando awsvpnclient (e opcional workspacesclient)…"
+    sudo dnf install -y awsvpnclient || true
+    # best-effort para workspaces (não falhar o script)
+    sudo dnf install -y workspacesclient || true
+  fi
+fi
+
+if rpm -q awsvpnclient >/dev/null 2>&1; then
+  echo "[ezdora][dnf-awsvpnclient] AWS VPN Client instalado via COPR."
+  configure_dotnet_globalization
+  exit 0
+fi
+
+# 2) URL oficial (AWS CloudFront) — pode falhar com 403
+AWS_VPN_RPM_URL="${AWS_VPN_RPM_URL:-https://d20adtppz83p9s.cloudfront.net/GTK/latest/x86_64/AWS_VPN_Client.rpm}"
+
+echo "[ezdora][dnf-awsvpnclient] Tentando instalar via URL oficial (pode falhar com 403)…"
 if sudo dnf install -y "$AWS_VPN_RPM_URL"; then
   echo "[ezdora][dnf-awsvpnclient] Concluído (via URL)."
+  configure_dotnet_globalization
   exit 0
 fi
 
 echo "[ezdora][dnf-awsvpnclient] Falha na URL direta. Tentando download com user-agent e instalação local…" >&2
 
-# 2) Fallback: baixa com user-agent de navegador e instala localmente
+# 3) Fallback: baixa com user-agent de navegador e instala localmente
 TMP_RPM="/tmp/AWS_VPN_Client.rpm"
 UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
 
@@ -47,11 +86,12 @@ fi
 if [ "$dl_ok" = "1" ]; then
   if sudo dnf install -y "$TMP_RPM"; then
     echo "[ezdora][dnf-awsvpnclient] Concluído (via arquivo local)."
+    configure_dotnet_globalization
     exit 0
   fi
 fi
 
-# 3) Se usuário fornecer caminho local via env, tenta instalar
+# 4) Se usuário fornecer caminho local via env, tenta instalar
 if [ -n "${AWS_VPN_RPM_PATH:-}" ] && [ -f "${AWS_VPN_RPM_PATH}" ]; then
   echo "[ezdora][dnf-awsvpnclient] Instalando a partir de arquivo local: ${AWS_VPN_RPM_PATH}"
   if sudo dnf install -y "${AWS_VPN_RPM_PATH}"; then
@@ -60,7 +100,7 @@ if [ -n "${AWS_VPN_RPM_PATH:-}" ] && [ -f "${AWS_VPN_RPM_PATH}" ]; then
   fi
 fi
 
-# 4) Procura em ~/Downloads por um RPM do AWS VPN Client já baixado
+# 5) Procura em ~/Downloads por um RPM do AWS VPN Client já baixado
 DL_DIR="$HOME/Downloads"
 if [ -d "$DL_DIR" ]; then
   candidate=$(ls -1t "$DL_DIR"/*AWS*VPN*Client*.rpm 2>/dev/null | head -n1 || true)
@@ -73,7 +113,7 @@ if [ -d "$DL_DIR" ]; then
   fi
 fi
 
-# 5) Último recurso: abre página oficial para download manual
+# 6) Último recurso: abre página oficial para download manual
 page="https://aws.amazon.com/vpn/client-vpn-download/"
 echo "[ezdora][dnf-awsvpnclient] Falha ao obter o RPM automaticamente." >&2
 echo "[ezdora][dnf-awsvpnclient] Abrindo a página oficial para download: $page" >&2
