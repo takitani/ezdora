@@ -29,8 +29,8 @@ sudo dnf upgrade --refresh -y
 echo "[ezdora] Instalando dependências base (git, curl, flatpak, dnf-plugins-core)..."
 sudo dnf install -y git curl flatpak dnf-plugins-core
 
-echo "[ezdora] Configurando Flathub (se necessário)..."
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+echo "[ezdora] Configurando Flathub (user) se necessário..."
+flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 
 echo "[ezdora] Instalando aplicativos (scripts individuais)..."
 bash "$(dirname "$0")/install/apps.sh"
