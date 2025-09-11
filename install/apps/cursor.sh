@@ -12,13 +12,42 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 cd "$tmpdir"
 
-URL="${CURSOR_RPM_URL:-https://downloader.cursor.sh/linux/rpm}"
 OUT="cursor-latest.rpm"
 
-echo "[ezdora][cursor] Baixando RPM do Cursor..."
-if ! curl -fL --retry 3 --connect-timeout 10 -A "Mozilla/5.0" -o "$OUT" "$URL"; then
-  echo "[ezdora][cursor] Falha ao baixar de $URL" >&2
-  echo "[ezdora][cursor] Dica: export CURSOR_RPM_URL=\"<URL diretas do .rpm>\" e reexecute este script." >&2
+download_rpm() {
+  local url="$1"
+  echo "[ezdora][cursor] Baixando RPM de: $url"
+  curl -fL --retry 3 --retry-all-errors --connect-timeout 15 \
+    -H 'User-Agent: Mozilla/5.0' \
+    -H 'Referer: https://www.cursor.com/' \
+    -o "$OUT" "$url"
+}
+
+URLS=()
+if [ -n "${CURSOR_RPM_URL:-}" ]; then URLS+=("$CURSOR_RPM_URL"); fi
+URLS+=(
+  "https://downloader.cursor.sh/linux/rpm"
+)
+
+DL_OK=0
+for u in "${URLS[@]}"; do
+  if download_rpm "$u" 2>/dev/null; then DL_OK=1; break; fi
+done
+
+# Fallback: use a pre-downloaded RPM from Downloads if present
+if [ $DL_OK -eq 0 ]; then
+  CAND=$(ls -1 "$HOME"/Downloads/*[Cc]ursor*.rpm 2>/dev/null | head -n1 || true)
+  if [ -n "$CAND" ]; then
+    echo "[ezdora][cursor] Usando RPM local: $CAND"
+    cp "$CAND" "$OUT"
+    DL_OK=1
+  fi
+fi
+
+if [ $DL_OK -eq 0 ]; then
+  echo "[ezdora][cursor] Não foi possível baixar o RPM automaticamente."
+  echo "[ezdora][cursor] Baixe manualmente pelo navegador o .rpm do Cursor e deixe em ~/Downloads."
+  echo "[ezdora][cursor] Ou exporte CURSOR_RPM_URL=\"<link-direto-.rpm>\" e execute novamente."
   exit 1
 fi
 
@@ -32,4 +61,3 @@ echo "[ezdora][cursor] Instalando..."
 sudo dnf install -y "$OUT"
 
 echo "[ezdora][cursor] Concluído. Execute com 'cursor'."
-
