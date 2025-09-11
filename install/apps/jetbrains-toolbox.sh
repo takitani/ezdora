@@ -4,8 +4,15 @@ set -euo pipefail
 # Install JetBrains Toolbox using official tarball (best for Fedora; auto-updates itself).
 # Provides wrapper at ~/.local/bin/jetbrains-toolbox, .desktop, and autostart.
 
-# Skip if already installed
-if command -v jetbrains-toolbox >/dev/null 2>&1 || [ -x "$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox" ]; then
+# Skip only if a valid non-symlink wrapper exists AND the Toolbox binary exists
+SKIP=0
+CURRENT_BIN="$(command -v jetbrains-toolbox || true)"
+if [ -n "$CURRENT_BIN" ] && [ -f "$CURRENT_BIN" ] && [ ! -L "$CURRENT_BIN" ]; then
+  if head -c 2 "$CURRENT_BIN" 2>/dev/null | grep -q '^#!'; then
+    SKIP=1
+  fi
+fi
+if [ $SKIP -eq 1 ] && [ -x "$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox" ]; then
   echo "[ezdora][toolbox] Já instalado. Pulando."
   exit 0
 fi
