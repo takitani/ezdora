@@ -16,12 +16,9 @@ Um post-install minimalista para Fedora 42 KDE (ou superior), focado em instalar
     - Se quiser garantir que não use cache: `bash <(curl -fsSL "https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh?nocache=$(date +%s)")`
   - Alternativa com wget:
     - `bash <(wget -qO- https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
-  - Opcional (SSH, se você preferir e já tiver chave configurada):
-    - `EZDORA_REPO_URL=git@github.com:takitani/ezdora.git bash <(curl -fsSL https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
 
 ### Notas rápidas
-- O bootstrap clona o repositório via HTTPS por padrão (repo público). Não precisa de SSH.
-- Se algum script estiver forçando SSH, verifique e limpe a variável: `unset EZDORA_REPO_URL`.
+- O bootstrap clona o repositório via HTTPS (repo público). Não precisa de SSH.
 
 ## O que faz
 
