@@ -83,6 +83,38 @@ EOF
   echo "[ezdora][dnf-awsvpnclient] Launcher configurado em: $target"
 }
 
+ensure_systemd_resolved_ready() {
+  # Garante systemd-resolved ativo; não força alterações destrutivas em resolv.conf por padrão
+  if systemctl list-unit-files | grep -q '^systemd-resolved\.service'; then
+    sudo systemctl enable --now systemd-resolved >/dev/null 2>&1 || true
+  fi
+
+  # Verifica modo gerenciado; se não estiver, apenas avisa e oferece correção via env flag
+  local managed="0"
+  if command -v resolvectl >/dev/null 2>&1 && resolvectl status >/dev/null 2>&1; then
+    if resolvectl status 2>/dev/null | grep -q "resolv.conf mode: managed"; then
+      managed="1"
+    fi
+  fi
+
+  if [ "$managed" != "1" ]; then
+    echo "[ezdora][dnf-awsvpnclient] Aviso: systemd-resolved não está gerenciando /etc/resolv.conf."
+    echo "[ezdora][dnf-awsvpnclient] Se a VPN não resolver DNS corretamente, exporte AWS_VPN_FIX_RESOLV=1 e reexecute."
+
+    if [ "${AWS_VPN_FIX_RESOLV:-0}" = "1" ]; then
+      # Tenta alternar o resolv.conf para o stub do resolved
+      if [ -f /run/systemd/resolve/stub-resolv.conf ]; then
+        sudo mv -f /etc/resolv.conf /etc/resolv.conf.backup-awsvpn 2>/dev/null || true
+        sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+        sudo systemctl restart systemd-resolved || true
+        echo "[ezdora][dnf-awsvpnclient] /etc/resolv.conf apontado para o stub do systemd-resolved (backup: /etc/resolv.conf.backup-awsvpn)."
+      else
+        echo "[ezdora][dnf-awsvpnclient] stub-resolv.conf não encontrado; pulei a correção automática."
+      fi
+    fi
+  fi
+}
+
 # Dependências comuns (best-effort)
 sudo dnf install -y libappindicator-gtk3 || true
 
@@ -99,6 +131,7 @@ if rpm -q awsvpnclient >/dev/null 2>&1; then
   echo "[ezdora][dnf-awsvpnclient] AWS VPN Client instalado via COPR."
   configure_dotnet_globalization
   configure_desktop_launcher
+  ensure_systemd_resolved_ready
   exit 0
 fi
 
@@ -110,6 +143,7 @@ if sudo dnf install -y "$AWS_VPN_RPM_URL"; then
   echo "[ezdora][dnf-awsvpnclient] Concluído (via URL)."
   configure_dotnet_globalization
   configure_desktop_launcher
+  ensure_systemd_resolved_ready
   exit 0
 fi
 
@@ -135,6 +169,7 @@ if [ "$dl_ok" = "1" ]; then
     echo "[ezdora][dnf-awsvpnclient] Concluído (via arquivo local)."
     configure_dotnet_globalization
     configure_desktop_launcher
+    ensure_systemd_resolved_ready
     exit 0
   fi
 fi
@@ -146,6 +181,7 @@ if [ -n "${AWS_VPN_RPM_PATH:-}" ] && [ -f "${AWS_VPN_RPM_PATH}" ]; then
     echo "[ezdora][dnf-awsvpnclient] Concluído (via caminho local)."
     configure_dotnet_globalization
     configure_desktop_launcher
+    ensure_systemd_resolved_ready
     exit 0
   fi
 fi
@@ -160,6 +196,7 @@ if [ -d "$DL_DIR" ]; then
       echo "[ezdora][dnf-awsvpnclient] Concluído (via Downloads)."
       configure_dotnet_globalization
       configure_desktop_launcher
+      ensure_systemd_resolved_ready
       exit 0
     fi
   fi
