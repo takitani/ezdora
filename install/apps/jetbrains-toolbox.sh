@@ -43,9 +43,22 @@ DEST="$HOME/.local/share/JetBrains/Toolbox"
 rm -rf "$DEST"
 mkdir -p "$DEST"
 cp -a "$DIR"/* "$DEST"/
+chmod +x "$DEST/jetbrains-toolbox" 2>/dev/null || true
 
 # Symlink into ~/.local/bin
-ln -sf "$DEST/jetbrains-toolbox" "$HOME/.local/bin/jetbrains-toolbox"
+# Create/repair symlink into ~/.local/bin. If the main binary isn't where
+# expected (future changes), locate it within Toolbox dir.
+TARGET_BIN="$DEST/jetbrains-toolbox"
+if [ ! -x "$TARGET_BIN" ]; then
+  ALT=$(find "$DEST" -maxdepth 2 -type f -name 'jetbrains-toolbox' -perm -111 2>/dev/null | head -n1)
+  if [ -n "$ALT" ]; then TARGET_BIN="$ALT"; fi
+fi
+ln -sf "$TARGET_BIN" "$HOME/.local/bin/jetbrains-toolbox"
+
+# Sanity check: warn if symlink target missing
+if [ ! -x "$HOME/.local/bin/jetbrains-toolbox" ]; then
+  echo "[ezdora][toolbox] Aviso: symlink não resolvido. Verifique $TARGET_BIN"
+fi
 
 # Ensure ~/.local/bin is on PATH for CLI shells (zsh/bash)
 for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
