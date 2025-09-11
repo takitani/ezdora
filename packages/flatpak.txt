@@ -1,0 +1,4 @@
+# Lista de apps Flatpak (ID do Flathub por linha)
+# Ex.: org.videolan.VLC
+
+org.localsend.localsend_app

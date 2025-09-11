@@ -1,0 +1,7 @@
+# Lista de pacotes DNF (um por linha)
+# Linhas em branco e iniciadas com # são ignoradas.
+
+git
+google-chrome-stable
+ghostty
+vlc
