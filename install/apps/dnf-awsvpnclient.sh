@@ -94,21 +94,47 @@ ensure_systemd_resolved_ready() {
     fi
   fi
 
+  # Alvo preferido para o resolv.conf gerenciado
+  local stub_target=""
+  if [ -f /run/systemd/resolve/stub-resolv.conf ]; then
+    stub_target="/run/systemd/resolve/stub-resolv.conf"
+  elif [ -f /run/systemd/resolve/resolv.conf ]; then
+    stub_target="/run/systemd/resolve/resolv.conf"
+  fi
+
+  # Se já está apontando para o stub, não há nada a fazer
+  if [ -n "$stub_target" ] && [ -L /etc/resolv.conf ]; then
+    local current_target
+    current_target="$(readlink -f /etc/resolv.conf 2>/dev/null || true)"
+    if [ "$current_target" = "$stub_target" ]; then
+      echo "[ezdora][dnf-awsvpnclient] resolv.conf já aponta para o systemd-resolved (ok)"
+      return 0
+    fi
+  fi
+
+  # Se não está gerenciado e o usuário pediu a correção, aplicar de forma idempotente
   if [ "$managed" != "1" ]; then
     echo "[ezdora][dnf-awsvpnclient] Aviso: systemd-resolved não está gerenciando /etc/resolv.conf."
-    echo "[ezdora][dnf-awsvpnclient] Se a VPN não resolver DNS corretamente, exporte AWS_VPN_FIX_RESOLV=1 e reexecute."
-
-    if [ "${AWS_VPN_FIX_RESOLV:-0}" = "1" ]; then
-      # Tenta alternar o resolv.conf para o stub do resolved
-      if [ -f /run/systemd/resolve/stub-resolv.conf ]; then
-        sudo mv -f /etc/resolv.conf /etc/resolv.conf.backup-awsvpn 2>/dev/null || true
-        sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
-        sudo systemctl restart systemd-resolved || true
-        echo "[ezdora][dnf-awsvpnclient] /etc/resolv.conf apontado para o stub do systemd-resolved (backup: /etc/resolv.conf.backup-awsvpn)."
-      else
-        echo "[ezdora][dnf-awsvpnclient] stub-resolv.conf não encontrado; pulei a correção automática."
-      fi
+    if [ "${AWS_VPN_FIX_RESOLV:-0}" != "1" ]; then
+      echo "[ezdora][dnf-awsvpnclient] Para aplicar correção automática e idempotente, execute com AWS_VPN_FIX_RESOLV=1."
+      return 0
     fi
+
+    if [ -z "$stub_target" ]; then
+      echo "[ezdora][dnf-awsvpnclient] stub resolv.conf do systemd-resolved não encontrado; pulei a correção."
+      return 0
+    fi
+
+    # Backup somente se arquivo não for symlink e ainda não existir backup
+    if [ ! -L /etc/resolv.conf ] && [ -f /etc/resolv.conf ] && [ ! -f /etc/resolv.conf.backup-awsvpn ]; then
+      sudo cp -f /etc/resolv.conf /etc/resolv.conf.backup-awsvpn
+      echo "[ezdora][dnf-awsvpnclient] Backup salvo em /etc/resolv.conf.backup-awsvpn"
+    fi
+
+    # Aponta resolv.conf para o stub (idempotente)
+    sudo ln -sfn "$stub_target" /etc/resolv.conf
+    sudo systemctl restart systemd-resolved || true
+    echo "[ezdora][dnf-awsvpnclient] resolv.conf agora aponta para $stub_target"
   fi
 }
 
