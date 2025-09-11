@@ -23,15 +23,15 @@ if sudo dnf install -y dropbox 2>/dev/null; then
 else
   echo "[ezdora][dropbox] Instalando via download direto do RPM..."
   
-  # Detect Fedora version
-  FEDORA_VERSION=$(rpm -E %fedora)
+  # Download and install RPM directly - using nautilus-dropbox package
+  TEMP_RPM="/tmp/nautilus-dropbox.rpm"
   
-  # Download and install RPM directly
-  TEMP_RPM="/tmp/dropbox-fedora.rpm"
-  wget -q -O "$TEMP_RPM" "https://www.dropbox.com/download?dl=packages/fedora/dropbox-${FEDORA_VERSION}-1.fedora.x86_64.rpm" || {
-    # Fallback to latest version if specific version not found
-    echo "[ezdora][dropbox] Tentando versão mais recente..."
-    wget -q -O "$TEMP_RPM" "https://www.dropbox.com/download?dl=packages/fedora/dropbox-2024.04.17-1.fedora.x86_64.rpm" || {
+  # Try to download the latest nautilus-dropbox RPM
+  echo "[ezdora][dropbox] Baixando nautilus-dropbox RPM..."
+  wget -O "$TEMP_RPM" "https://www.dropbox.com/download?dl=packages/fedora/nautilus-dropbox-2025.05.20-1.fc42.x86_64.rpm" || {
+    # Fallback to generic latest version
+    echo "[ezdora][dropbox] Tentando versão alternativa..."
+    wget -O "$TEMP_RPM" "https://www.dropbox.com/download?dl=packages/fedora/nautilus-dropbox-2024.04.17-1.fedora.x86_64.rpm" || {
       echo "[ezdora][dropbox] Falha ao baixar RPM do Dropbox." >&2
       exit 1
     }
