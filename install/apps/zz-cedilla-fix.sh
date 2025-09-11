@@ -22,8 +22,8 @@ if [ -s "${USER_COMPOSE}" ]; then
 fi
 
 # Replace accented-c (ć/Ć) with cedilla (ç/Ç)
-sed -e 's/\xc4\x87/\xc3\xa7/g' \
-    -e 's/\xc4\x86/\xc3\x87/g' <"${SYSTEM_COMPOSE}" >"${USER_COMPOSE}"
+sed -e 's/\\xc4\\x87/\\xc3\\xa7/g' \
+    -e 's/\\xc4\\x86/\\xc3\\x87/g' <"${SYSTEM_COMPOSE}" >"${USER_COMPOSE}"
 
 echo "[ezdora][cedilla] ~/.XCompose atualizado. Faça logout/login para aplicar."
 
