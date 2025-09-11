@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Install JetBrains Toolbox using official tarball (best for Fedora; auto-updates itself).
-# Creates a symlink at ~/.local/bin/jetbrains-toolbox.
+# Provides wrapper at ~/.local/bin/jetbrains-toolbox, .desktop, and autostart.
 
 # Skip if already installed
 if command -v jetbrains-toolbox >/dev/null 2>&1 || [ -x "$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox" ]; then
@@ -18,17 +18,33 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 cd "$tmpdir"
 
-# Discover latest download URL from JetBrains releases API
-URL=$(curl -fsSL "https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release" \
-  | grep -oE 'https:[^"]+jetbrains-toolbox-[^\"]+\.tar\.gz' \
-  | head -n1 || true)
+# Discover latest download URL from JetBrains releases API (robust)
+URL=""
+if command -v python3 >/dev/null 2>&1; then
+  URL=$(python3 - <<'PY'
+import json,urllib.request
+u='https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release'
+data=json.load(urllib.request.urlopen(u))
+print(data['TBA'][0]['downloads']['linux']['link'])
+PY
+  2>/dev/null || true)
+fi
+if [ -z "${URL:-}" ]; then
+  URL=$(curl -fsSL "https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release" \
+    | grep -oE 'https:[^"]+jetbrains-toolbox-[^"]+\.tar\.gz' \
+    | head -n1 || true)
+fi
 
 if [ -z "${URL:-}" ]; then
   echo "[ezdora][toolbox] Não foi possível detectar a URL da versão mais recente." >&2
   exit 1
 fi
 
-curl -fsSLo toolbox.tar.gz "$URL"
+curl -fL --retry 3 --retry-all-errors -H 'User-Agent: Mozilla/5.0' -o toolbox.tar.gz "$URL"
+if ! file toolbox.tar.gz | grep -qi 'gzip compressed data'; then
+  echo "[ezdora][toolbox] Download inválido (não é tar.gz)." >&2
+  exit 1
+fi
 tar -xzf toolbox.tar.gz
 
 # Find extracted directory (matches jetbrains-toolbox-*/)
@@ -45,20 +61,19 @@ mkdir -p "$DEST"
 cp -a "$DIR"/* "$DEST"/
 chmod +x "$DEST/jetbrains-toolbox" 2>/dev/null || true
 
-# Symlink into ~/.local/bin
-# Create/repair symlink into ~/.local/bin. If the main binary isn't where
-# expected (future changes), locate it within Toolbox dir.
+# Determine actual binary path
 TARGET_BIN="$DEST/jetbrains-toolbox"
 if [ ! -x "$TARGET_BIN" ]; then
-  ALT=$(find "$DEST" -maxdepth 2 -type f -name 'jetbrains-toolbox' -perm -111 2>/dev/null | head -n1)
+  ALT=$(find "$DEST" -maxdepth 3 -type f -name 'jetbrains-toolbox' -perm -111 2>/dev/null | head -n1)
   if [ -n "$ALT" ]; then TARGET_BIN="$ALT"; fi
 fi
-ln -sf "$TARGET_BIN" "$HOME/.local/bin/jetbrains-toolbox"
 
-# Sanity check: warn if symlink target missing
-if [ ! -x "$HOME/.local/bin/jetbrains-toolbox" ]; then
-  echo "[ezdora][toolbox] Aviso: symlink não resolvido. Verifique $TARGET_BIN"
-fi
+# Wrapper script into ~/.local/bin (more robust than symlink)
+cat > "$HOME/.local/bin/jetbrains-toolbox" <<EOF
+#!/usr/bin/env bash
+exec "$TARGET_BIN" "\$@"
+EOF
+chmod +x "$HOME/.local/bin/jetbrains-toolbox"
 
 # Ensure ~/.local/bin is on PATH for CLI shells (zsh/bash)
 for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
@@ -103,3 +118,4 @@ update-desktop-database "$APP_DIR" >/dev/null 2>&1 || true
 nohup "$DEST/jetbrains-toolbox" --minimize >/dev/null 2>&1 & disown || true
 
 echo "[ezdora][toolbox] Instalado. Comando disponível: 'jetbrains-toolbox'. Primeira execução iniciada em segundo plano."
+
