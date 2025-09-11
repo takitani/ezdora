@@ -69,6 +69,8 @@ if [ ! -x "$TARGET_BIN" ]; then
 fi
 
 # Wrapper script into ~/.local/bin (more robust than symlink)
+# Remove any previous symlink to avoid writing through it
+rm -f "$HOME/.local/bin/jetbrains-toolbox"
 cat > "$HOME/.local/bin/jetbrains-toolbox" <<EOF
 #!/usr/bin/env bash
 exec "$TARGET_BIN" "\$@"
@@ -118,4 +120,3 @@ update-desktop-database "$APP_DIR" >/dev/null 2>&1 || true
 nohup "$DEST/jetbrains-toolbox" --minimize >/dev/null 2>&1 & disown || true
 
 echo "[ezdora][toolbox] Instalado. Comando disponível: 'jetbrains-toolbox'. Primeira execução iniciada em segundo plano."
-
