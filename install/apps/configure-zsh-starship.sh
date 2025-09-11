@@ -29,6 +29,17 @@ if ! grep -q "starship init zsh" "$ZSHRC" 2>/dev/null; then
   } >> "$ZSHRC"
 fi
 
+# zoxide integration if installed
+if command -v zoxide >/dev/null 2>&1; then
+  if ! grep -q "zoxide init zsh" "$ZSHRC" 2>/dev/null; then
+    {
+      echo ''
+      echo '# EzDora: zoxide (jump) integration'
+      echo 'eval "$(zoxide init zsh --cmd j)"'
+    } >> "$ZSHRC"
+  fi
+fi
+
 # Ensure mise activation for zsh
 if ! grep -q "mise activate zsh" "$ZSHRC" 2>/dev/null; then
   {
