@@ -45,15 +45,49 @@ CFG="$HOME/.config/kglobalshortcutsrc"
 $KW --file kglobalshortcutsrc --group org.kde.konsole.desktop --key _launch "none,none,Konsole" || true
 $KW --file kglobalshortcutsrc --group org.kde.konsole.desktop --key New "none,none,Konsole" || true
 
-# Map Ghostty launch to Ctrl+Alt+T
-$KW --file kglobalshortcutsrc --group "$APP_ID" --key _launch "Ctrl+Alt+T,none,Launch Ghostty" || true
+# Map Ghostty launch to Ctrl+Alt+T with correct format
+# Format: shortcut,backup_shortcut,description
+$KW --file kglobalshortcutsrc --group "$APP_ID" --key _launch "Ctrl+Alt+T,Ctrl+Alt+T,Launch Ghostty" || true
+
+# Also add a custom shortcut as backup method
+$KW --file khotkeysrc --group Data --key DataCount 1 || true
+$KW --file khotkeysrc --group Data_1 --key Comment "Launch Ghostty Terminal" || true
+$KW --file khotkeysrc --group Data_1 --key Enabled true || true
+$KW --file khotkeysrc --group Data_1 --key Name "Ghostty" || true
+$KW --file khotkeysrc --group Data_1 --key Type SIMPLE_ACTION_DATA || true
+
+$KW --file khotkeysrc --group Data_1Conditions --key Comment "" || true
+$KW --file khotkeysrc --group Data_1Conditions --key ConditionsCount 0 || true
+
+$KW --file khotkeysrc --group Data_1Triggers --key Comment "Simple_action" || true
+$KW --file khotkeysrc --group Data_1Triggers --key TriggersCount 1 || true
+
+$KW --file khotkeysrc --group Data_1Triggers0 --key Key "Ctrl+Alt+T" || true
+$KW --file khotkeysrc --group Data_1Triggers0 --key Type SHORTCUT || true
+$KW --file khotkeysrc --group Data_1Triggers0 --key Uuid "{$(uuidgen 2>/dev/null || echo "00000000-0000-0000-0000-000000000001")}" || true
+
+$KW --file khotkeysrc --group Data_1Actions --key ActionsCount 1 || true
+$KW --file khotkeysrc --group Data_1Actions0 --key CommandURL "ghostty" || true
+$KW --file khotkeysrc --group Data_1Actions0 --key Type COMMAND_URL || true
 
 # Reload or restart global shortcuts service quietly
 if command -v kglobalaccel6 >/dev/null 2>&1; then
-  # Prefer --replace; fall back to restart sequence
-  nohup kglobalaccel6 --replace >/dev/null 2>&1 & disown || true
+  # Stop existing service
+  killall kglobalaccel6 2>/dev/null || true
+  sleep 0.5
+  # Start new instance
+  nohup kglobalaccel6 >/dev/null 2>&1 & disown || true
 elif command -v kglobalaccel5 >/dev/null 2>&1; then
-  nohup kglobalaccel5 --replace >/dev/null 2>&1 & disown || true
+  killall kglobalaccel5 2>/dev/null || true
+  sleep 0.5
+  nohup kglobalaccel5 >/dev/null 2>&1 & disown || true
+fi
+
+# Also restart khotkeys if running
+if pgrep -x khotkeys >/dev/null 2>&1; then
+  killall khotkeys 2>/dev/null || true
+  sleep 0.5
+  nohup khotkeys >/dev/null 2>&1 & disown || true
 fi
 
 echo "[ezdora][kde] Terminal padrão e atalho Ctrl+Alt+T ajustados para Ghostty. Se não surtir efeito imediato, relogue."
