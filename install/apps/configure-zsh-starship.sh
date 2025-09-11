@@ -20,12 +20,27 @@ ZSHRC="$HOME/.zshrc"
 
 # Ensure basic PATH and mise/Starship init
 touch "$ZSHRC"
-if ! rg -n "starship init zsh" "$ZSHRC" >/dev/null 2>&1; then
+if ! grep -q "starship init zsh" "$ZSHRC" 2>/dev/null; then
   {
     echo ''
     echo '# EzDora: Starship prompt'
     echo 'export PATH="$HOME/.local/bin:$PATH"'
     echo 'eval "$(starship init zsh)"'
+  } >> "$ZSHRC"
+fi
+
+# Preserve history behavior (append/share; never truncate)
+if ! grep -q "EzDora: Zsh history" "$ZSHRC" 2>/dev/null; then
+  {
+    echo ''
+    echo '# EzDora: Zsh history (preservar)'
+    echo 'export HISTFILE="$HOME/.zsh_history"'
+    echo 'export HISTSIZE=50000'
+    echo 'export SAVEHIST=50000'
+    echo 'setopt APPEND_HISTORY'
+    echo 'setopt INC_APPEND_HISTORY'
+    echo 'setopt SHARE_HISTORY'
+    echo 'setopt HIST_IGNORE_ALL_DUPS'
   } >> "$ZSHRC"
 fi
 
@@ -91,6 +106,10 @@ format = "[$symbol($version )]($style)"
 symbol = " "
 format = "[$symbol$context]($style) "
 
+[dotnet]
+symbol = " "
+format = "[$symbol($version )]($style) "
+
 [package]
 disabled = true
 
@@ -110,7 +129,7 @@ echo "[ezdora][zsh] zsh configurado com Starship. Reinicie a sessão para aplica
 if [ "$LOGIN_SHELL" != "$ZSH_PATH" ]; then
   BASHRC="$HOME/.bashrc"
   touch "$BASHRC"
-  if ! rg -n "starship init bash" "$BASHRC" >/dev/null 2>&1; then
+  if ! grep -q "starship init bash" "$BASHRC" 2>/dev/null; then
     {
       echo ''
       echo '# EzDora: Starship prompt (bash fallback até mudar para zsh)'
