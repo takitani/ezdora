@@ -35,8 +35,18 @@ if command -v zoxide >/dev/null 2>&1; then
     {
       echo ''
       echo '# EzDora: zoxide (jump) integration'
-      echo 'eval "$(zoxide init zsh --cmd j)"'
+      echo 'eval "$(zoxide init zsh --cmd z)"'
     } >> "$ZSHRC"
+  fi
+  if ! grep -q "^alias cd=z$" "$ZSHRC" 2>/dev/null; then
+    echo 'alias cd=z' >> "$ZSHRC"
+  fi
+fi
+
+# lazydocker alias
+if command -v lazydocker >/dev/null 2>&1; then
+  if ! grep -q "^alias ld=lazydocker$" "$ZSHRC" 2>/dev/null; then
+    echo "alias ld=lazydocker" >> "$ZSHRC"
   fi
 fi
 
