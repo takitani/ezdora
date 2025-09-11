@@ -6,7 +6,7 @@ echo "[ezdora][dropbox] Instalando Dropbox via repositório oficial (Fedora)..."
 # Add official Dropbox repo
 if [ ! -f /etc/yum.repos.d/dropbox.repo ]; then
   if command -v dnf5 >/dev/null 2>&1; then
-    sudo dnf5 config-manager addrepo https://linux.dropbox.com/fedora/dropbox.repo || true
+    sudo dnf5 config-manager addrepo --from-repofile=https://linux.dropbox.com/fedora/dropbox.repo || true
   else
     sudo dnf config-manager --add-repo https://linux.dropbox.com/fedora/dropbox.repo || true
   fi
