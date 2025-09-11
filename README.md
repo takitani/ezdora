@@ -10,6 +10,14 @@ Um post-install minimalista para Fedora 42 KDE (ou superior), focado em instalar
 - Ou usar o bootstrap (clona para `~/.local/share/ezdora` e executa):
   - `bash bootstrap.sh`
 
+- Rodar remoto (uma linha, sem clonar manualmente):
+  - SSH (requer chave SSH configurada no GitHub):
+    - `bash <(curl -fsSL https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
+  - HTTPS (sem SSH):
+    - `EZDORA_REPO_URL=https://github.com/takitani/ezdora.git bash <(curl -fsSL https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
+  - Alternativa com wget:
+    - `bash <(wget -qO- https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
+
 ## O que faz
 
 - Verifica que está em Fedora 42+.
