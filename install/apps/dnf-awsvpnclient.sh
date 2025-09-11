@@ -36,6 +36,53 @@ EOF
   fi
 }
 
+configure_desktop_launcher() {
+  # Cria override do desktop launcher em nível de usuário com o env necessário
+  local user_dir="$HOME/.local/share/applications"
+  mkdir -p "$user_dir"
+
+  local src=""
+  for f in \
+    /usr/share/applications/awsvpnclient.desktop \
+    "/usr/share/applications/AWS VPN Client.desktop" \
+    /usr/share/applications/com.amazonaws.awsvpnclient.desktop \
+    /usr/share/applications/com.amazon.awsvpnclient.desktop; do
+    if [ -f "$f" ]; then src="$f"; break; fi
+  done
+
+  local target
+  if [ -n "$src" ]; then
+    target="$user_dir/$(basename "$src")"
+    cp -f "$src" "$target"
+    # Prepend o env à linha Exec= se ainda não existir
+    if ! grep -q "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT" "$target" 2>/dev/null; then
+      sed -i -E 's/^Exec=([^\n]+)/Exec=env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 \1/' "$target"
+    fi
+  else
+    # Fallback: cria um .desktop mínimo apontando para o binário
+    local bin
+    bin=$(command -v awsvpnclient || true)
+    [ -z "$bin" ] && bin="/opt/awsvpnclient/awsvpnclient"
+    target="$user_dir/awsvpnclient.desktop"
+    cat > "$target" <<EOF
+[Desktop Entry]
+Name=AWS VPN Client
+Comment=Connect to AWS Client VPN
+Exec=env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 $bin %U
+Icon=awsvpnclient
+Terminal=false
+Type=Application
+Categories=Network;
+EOF
+  fi
+
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$user_dir" >/dev/null 2>&1 || true
+  fi
+
+  echo "[ezdora][dnf-awsvpnclient] Launcher configurado em: $target"
+}
+
 # Dependências comuns (best-effort)
 sudo dnf install -y libappindicator-gtk3 || true
 
@@ -53,6 +100,7 @@ fi
 if rpm -q awsvpnclient >/dev/null 2>&1; then
   echo "[ezdora][dnf-awsvpnclient] AWS VPN Client instalado via COPR."
   configure_dotnet_globalization
+  configure_desktop_launcher
   exit 0
 fi
 
@@ -63,6 +111,7 @@ echo "[ezdora][dnf-awsvpnclient] Tentando instalar via URL oficial (pode falhar 
 if sudo dnf install -y "$AWS_VPN_RPM_URL"; then
   echo "[ezdora][dnf-awsvpnclient] Concluído (via URL)."
   configure_dotnet_globalization
+  configure_desktop_launcher
   exit 0
 fi
 
@@ -87,6 +136,7 @@ if [ "$dl_ok" = "1" ]; then
   if sudo dnf install -y "$TMP_RPM"; then
     echo "[ezdora][dnf-awsvpnclient] Concluído (via arquivo local)."
     configure_dotnet_globalization
+    configure_desktop_launcher
     exit 0
   fi
 fi
@@ -96,6 +146,8 @@ if [ -n "${AWS_VPN_RPM_PATH:-}" ] && [ -f "${AWS_VPN_RPM_PATH}" ]; then
   echo "[ezdora][dnf-awsvpnclient] Instalando a partir de arquivo local: ${AWS_VPN_RPM_PATH}"
   if sudo dnf install -y "${AWS_VPN_RPM_PATH}"; then
     echo "[ezdora][dnf-awsvpnclient] Concluído (via caminho local)."
+    configure_dotnet_globalization
+    configure_desktop_launcher
     exit 0
   fi
 fi
@@ -108,6 +160,8 @@ if [ -d "$DL_DIR" ]; then
     echo "[ezdora][dnf-awsvpnclient] Encontrado RPM em Downloads: $candidate"
     if sudo dnf install -y "$candidate"; then
       echo "[ezdora][dnf-awsvpnclient] Concluído (via Downloads)."
+      configure_dotnet_globalization
+      configure_desktop_launcher
       exit 0
     fi
   fi
