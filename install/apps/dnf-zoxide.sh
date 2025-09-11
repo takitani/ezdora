@@ -24,4 +24,4 @@ if ! grep -q "^alias cd=z$" "$ZSHRC" 2>/dev/null; then
   echo "alias cd=z" >> "$ZSHRC"
 fi
 
-echo "[ezdora][zoxide] Concluído. Reabra o shell e use: j <pasta>"
+echo "[ezdora][zoxide] Concluído. Reabra o shell e use: z <pasta> (ou cd <pasta>)."
