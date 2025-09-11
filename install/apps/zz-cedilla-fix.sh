@@ -25,5 +25,14 @@ fi
 sed -e 's/\\xc4\\x87/\\xc3\\xa7/g' \
     -e 's/\\xc4\\x86/\\xc3\\x87/g' <"${SYSTEM_COMPOSE}" >"${USER_COMPOSE}"
 
-echo "[ezdora][cedilla] ~/.XCompose atualizado. Faça logout/login para aplicar."
+# Ensure dead_acute sequences also produce cedilla without needing a Compose key
+cat >> "${USER_COMPOSE}" <<'EOF_EZDORA_CEDILLA'
 
+# EzDora cedilla mappings for apostrophe dead key
+<dead_acute> <c> : "ç" ccedilla
+<dead_acute> <C> : "Ç" Ccedilla
+<c> <dead_acute> : "ç" ccedilla
+<C> <dead_acute> : "Ç" Ccedilla
+EOF_EZDORA_CEDILLA
+
+echo "[ezdora][cedilla] ~/.XCompose atualizado. Faça logout/login para aplicar."

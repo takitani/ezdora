@@ -47,5 +47,15 @@ cp -a "$DIR"/* "$DEST"/
 # Symlink into ~/.local/bin
 ln -sf "$DEST/jetbrains-toolbox" "$HOME/.local/bin/jetbrains-toolbox"
 
-echo "[ezdora][toolbox] Instalado. Inicie com 'jetbrains-toolbox' (criará ícones e atualizações)."
+# Ensure ~/.local/bin is on PATH for CLI shells (zsh/bash)
+for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  touch "$rc"
+  if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$rc" 2>/dev/null; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+  fi
+done
 
+# First run in background to initialize and create desktop entries
+nohup "$DEST/jetbrains-toolbox" --minimize >/dev/null 2>&1 & disown || true
+
+echo "[ezdora][toolbox] Instalado. Comando disponível: 'jetbrains-toolbox'. Primeira execução iniciada em segundo plano."
