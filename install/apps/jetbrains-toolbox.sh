@@ -17,6 +17,12 @@ if [ $SKIP -eq 1 ] && [ -x "$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolb
   exit 0
 fi
 
+# If an old symlink exists in ~/.local/bin, remove it so we always repair to a wrapper
+if [ -L "$HOME/.local/bin/jetbrains-toolbox" ]; then
+  echo "[ezdora][toolbox] Reparando symlink antigo em ~/.local/bin/jetbrains-toolbox"
+  rm -f "$HOME/.local/bin/jetbrains-toolbox"
+fi
+
 echo "[ezdora][toolbox] Instalando JetBrains Toolbox..."
 
 mkdir -p "$HOME/.local/share/JetBrains" "$HOME/.local/bin"
