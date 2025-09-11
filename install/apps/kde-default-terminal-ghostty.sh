@@ -16,8 +16,9 @@ fi
 APP_ID="dev.kdrag0n.Ghostty.desktop"
 for dir in "$HOME/.local/share/applications" /usr/share/applications; do
   if [ -d "$dir" ]; then
-    CANDIDATE=$(grep -RIl "^Exec=.*ghostty" "$dir" 2>/dev/null | head -n1)
-    if [ -n "$CANDIDATE" ]; then
+    # Avoid set -e with pipefail when grep finds nothing
+    CANDIDATE=$( (grep -RIl "^Exec=.*ghostty" "$dir" 2>/dev/null || true) | head -n1 )
+    if [ -n "${CANDIDATE:-}" ]; then
       APP_ID="$(basename "$CANDIDATE")"
       break
     fi
@@ -34,8 +35,8 @@ if ! command -v kwriteconfig6 >/dev/null 2>&1; then
 fi
 
 echo "[ezdora][kde] Definindo Ghostty como terminal padrão no KDE..."
-$KW --file kdeglobals --group General --key TerminalApplication ghostty
-$KW --file kdeglobals --group General --key TerminalService "$APP_ID"
+$KW --file kdeglobals --group General --key TerminalApplication ghostty || true
+$KW --file kdeglobals --group General --key TerminalService "$APP_ID" || true
 
 # Also remap Ctrl+Alt+T global shortcut from Konsole to Ghostty
 CFG="$HOME/.config/kglobalshortcutsrc"
