@@ -22,7 +22,7 @@ for i in "${!PKGS[@]}"; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     MISSING_PKGS+=("${PKGS[$i]}")
   fi
-fi
+done
 
 if [ ${#MISSING_PKGS[@]} -eq 0 ]; then
   echo "[ezdora][ai-cli] CLIs já instaladas (codex/claude/gemini). Pulando."
