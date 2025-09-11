@@ -55,6 +55,37 @@ for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
   fi
 done
 
+# Create desktop entry (menu launcher)
+APP_DIR="$HOME/.local/share/applications"
+mkdir -p "$APP_DIR"
+cat > "$APP_DIR/jetbrains-toolbox.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=JetBrains Toolbox
+Comment=Manage and update JetBrains IDEs
+Exec=$HOME/.local/bin/jetbrains-toolbox
+Icon=$DEST/jetbrains-toolbox.svg
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=false
+EOF
+
+# Autostart minimized on login
+AUTOSTART_DIR="$HOME/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
+cat > "$AUTOSTART_DIR/jetbrains-toolbox.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=JetBrains Toolbox
+Comment=Start JetBrains Toolbox on login
+Exec=$DEST/jetbrains-toolbox --minimize
+Terminal=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=KDE;GNOME;XFCE;Unity;
+EOF
+
+update-desktop-database "$APP_DIR" >/dev/null 2>&1 || true
+
 # First run in background to initialize and create desktop entries
 nohup "$DEST/jetbrains-toolbox" --minimize >/dev/null 2>&1 & disown || true
 
