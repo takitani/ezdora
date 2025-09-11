@@ -18,10 +18,17 @@ fi
 if printf '%s\n' "${PKGS[@]}" | grep -q '^google-chrome-stable$'; then
   echo "[ezdora][dnf] Habilitando repositório do Google Chrome..."
   sudo dnf install -y fedora-workstation-repositories || true
+  # Instrução oficial Fedora
   if command -v dnf5 >/dev/null 2>&1; then
-    sudo dnf5 config-manager --set-enabled google-chrome || sudo dnf5 config-manager enable google-chrome || true
+    sudo dnf5 config-manager setopt google-chrome.enabled=1 || true
   else
-    sudo dnf config-manager --set-enabled google-chrome || sudo dnf config-manager enable google-chrome || true
+    sudo dnf config-manager setopt google-chrome.enabled=1 || true
+  fi
+  # Fallback: garantir enabled=1 no arquivo .repo
+  if [ -f /etc/yum.repos.d/google-chrome.repo ]; then
+    if ! grep -q '^enabled=1' /etc/yum.repos.d/google-chrome.repo; then
+      sudo sed -i 's/^enabled=.*/enabled=1/' /etc/yum.repos.d/google-chrome.repo || true
+    fi
   fi
 fi
 
