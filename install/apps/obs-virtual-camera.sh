@@ -21,7 +21,7 @@ echo 'v4l2loopback' | sudo tee /etc/modules-load.d/v4l2loopback.conf >/dev/null
 
 # 4) Module options: single device, fixed number, friendly name, exclusive caps
 sudo tee /etc/modprobe.d/v4l2loopback.conf >/dev/null <<'EOF'
-options v4l2loopback devices=1 video_nr=10 card_label="OBS Virtual Camera" exclusive_caps=1
+options v4l2loopback devices=1 video_nr=10 card_label="OBS Virtual Camera (EzDora)" exclusive_caps=1
 EOF
 
 # 5) Build/prepare module if using akmods; then load
@@ -32,9 +32,17 @@ if ! lsmod | grep -q '^v4l2loopback'; then
   sudo modprobe v4l2loopback || true
 fi
 
-if [ -e /dev/video10 ]; then
-  echo "[ezdora][obs-vcam] Virtual camera disponível em /dev/video10 (OBS: Start Virtual Camera)."
-else
-  echo "[ezdora][obs-vcam] Módulo configurado. Reinicie para garantir criação de /dev/video10."
-fi
+# 6) Friendly symlink via udev (optional convenience)
+sudo tee /etc/udev/rules.d/99-obs-virtual-camera.rules >/dev/null <<'EOF'
+# Create a stable, friendly symlink for the OBS virtual camera
+SUBSYSTEM=="video4linux", ATTR{name}=="OBS Virtual Camera (EzDora)", SYMLINK+="video-obs"
+EOF
+sudo udevadm control --reload-rules || true
+sudo udevadm trigger --subsystem-match=video4linux || true
 
+if [ -e /dev/video10 ] || [ -e /dev/video-obs ]; then
+  echo "[ezdora][obs-vcam] Virtual camera ativa: $( [ -e /dev/video-obs ] && echo /dev/video-obs || echo /dev/video10 )"
+  echo "[ezdora][obs-vcam] Nome amigável em apps: 'OBS Virtual Camera (EzDora)'"
+else
+  echo "[ezdora][obs-vcam] Módulo configurado. Reinicie para garantir a criação do device e do symlink /dev/video-obs."
+fi
