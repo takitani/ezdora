@@ -90,10 +90,8 @@ sudo dnf install -y libappindicator-gtk3 || true
 if ! rpm -q awsvpnclient >/dev/null 2>&1; then
   echo "[ezdora][dnf-awsvpnclient] Habilitando COPR vorona/aws-rpm-packages…"
   if sudo dnf copr enable -y vorona/aws-rpm-packages; then
-    echo "[ezdora][dnf-awsvpnclient] Instalando awsvpnclient (e opcional workspacesclient)…"
+    echo "[ezdora][dnf-awsvpnclient] Instalando awsvpnclient…"
     sudo dnf install -y awsvpnclient || true
-    # best-effort para workspaces (não falhar o script)
-    sudo dnf install -y workspacesclient || true
   fi
 fi
 
