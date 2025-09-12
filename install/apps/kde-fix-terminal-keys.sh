@@ -79,6 +79,24 @@ ScrollBarPosition=1
 BlinkingCursorEnabled=true
 EOF
 
+# Check if fixes are already applied
+echo "🔍 Verificando se as correções já foram aplicadas..."
+
+# Check if shell fixes exist
+FIXES_APPLIED=false
+if [ -f ~/.zshrc ] && grep -q "KDE Terminal fixes for Home/End keys" ~/.zshrc 2>/dev/null; then
+  FIXES_APPLIED=true
+fi
+
+if [ -f ~/.bashrc ] && grep -q "KDE Terminal fixes for Home/End keys" ~/.bashrc 2>/dev/null; then
+  FIXES_APPLIED=true
+fi
+
+if [ "$FIXES_APPLIED" = true ]; then
+  echo "✅ Correções já aplicadas anteriormente. Saindo..."
+  exit 0
+fi
+
 # Fix 4: Reset keyboard shortcuts globally
 echo "🔧 Correção 4: Resetando atalhos globais problemáticos"
 
@@ -139,47 +157,61 @@ EOF
   fi
 fi
 
+# Function to restart KDE session with fallbacks
+restart_kde_session() {
+  echo "🔄 Tentando reiniciar sessão KDE..."
+  
+  # Method 1: qdbus6 (Plasma 6)
+  if command -v qdbus6 >/dev/null 2>&1; then
+    echo "Usando qdbus6..."
+    qdbus6 org.kde.ksmserver /KSMServer logout 1 3 3 2>/dev/null && return
+  fi
+  
+  # Method 2: qdbus (Plasma 5)  
+  if command -v qdbus >/dev/null 2>&1; then
+    echo "Usando qdbus..."
+    qdbus org.kde.ksmserver /KSMServer logout 1 3 3 2>/dev/null && return
+  fi
+  
+  # Method 3: loginctl
+  if command -v loginctl >/dev/null 2>&1 && [[ -n "${XDG_SESSION_ID:-}" ]]; then
+    echo "Usando loginctl..."
+    loginctl terminate-session "$XDG_SESSION_ID" 2>/dev/null && return
+  fi
+  
+  # Method 4: systemd
+  if command -v systemctl >/dev/null 2>&1; then
+    echo "Usando systemctl..."
+    systemctl --user exit 2>/dev/null && return
+  fi
+  
+  # Fallback
+  echo "⚠️  Não foi possível reiniciar automaticamente."
+  echo "   Execute manualmente: logout ou reinicie o sistema"
+}
+
 echo ""
 echo "✅ Correções aplicadas!"
 echo ""
-echo "🔄 Para aplicar completamente:"
-echo "1. Reinicie o KDE (logout/login)"
-echo "2. Ou execute: kquitapp5 konsole; kquitapp5 plasmashell; plasmashell &"
-echo ""
-echo "🧪 Teste após reiniciar:"
-echo "- Abra um novo terminal (Konsole ou Ghostty)"
-echo "- Digite uma linha longa"
-echo "- Teste Home/End"
+echo "🔄 Para aplicar completamente é necessário reiniciar a sessão KDE"
+echo "   Execute: logout/login ou reinicie o sistema"
 echo ""
 
+# For automated setup - no interactive prompts
+if [[ "${EZDORA_AUTOMATED:-}" == "true" ]]; then
+  echo "🤖 Modo automatizado: sessão será reiniciada ao final da instalação"
+  exit 0
+fi
+
+# Interactive mode for manual execution
 if command -v gum >/dev/null 2>&1; then
   if gum confirm "Reiniciar sessão KDE agora?"; then
-    # Try different methods to logout/restart KDE session
-    if command -v qdbus6 >/dev/null 2>&1; then
-      qdbus6 org.kde.ksmserver /KSMServer logout 1 3 3
-    elif command -v qdbus >/dev/null 2>&1; then
-      qdbus org.kde.ksmserver /KSMServer logout 1 3 3  
-    elif command -v loginctl >/dev/null 2>&1; then
-      loginctl terminate-session "$XDG_SESSION_ID"
-    else
-      echo "Não foi possível reiniciar automaticamente."
-      echo "Execute manualmente: logout ou reinicie o sistema"
-    fi
+    restart_kde_session
   fi
 else
   read -r -p "Reiniciar sessão KDE agora? [y/N] " restart_kde
   if [[ ${restart_kde:-} =~ ^[Yy]$ ]]; then
-    # Try different methods to logout/restart KDE session
-    if command -v qdbus6 >/dev/null 2>&1; then
-      qdbus6 org.kde.ksmserver /KSMServer logout 1 3 3
-    elif command -v qdbus >/dev/null 2>&1; then
-      qdbus org.kde.ksmserver /KSMServer logout 1 3 3  
-    elif command -v loginctl >/dev/null 2>&1; then
-      loginctl terminate-session "$XDG_SESSION_ID"
-    else
-      echo "Não foi possível reiniciar automaticamente."
-      echo "Execute manualmente: logout ou reinicie o sistema"
-    fi
+    restart_kde_session
   fi
 fi
 
