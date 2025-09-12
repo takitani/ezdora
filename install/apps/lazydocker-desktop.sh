@@ -9,7 +9,31 @@ echo "[ezdora][lazydocker] Criando ícones oficiais em todos os tamanhos..."
 
 # Create hicolor icon theme directories
 HICOLOR_DIR="$HOME/.local/share/icons/hicolor"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Find the ezdora repository root directory
+# Try multiple possible locations
+SCRIPT_DIR=""
+for possible_dir in \
+  "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)" \
+  "$HOME/Devel/ezdora" \
+  "$HOME/.local/share/ezdora" \
+  "/opt/ezdora" \
+  "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.."; do
+  if [ -d "$possible_dir/assets/icons/lazydocker" ]; then
+    SCRIPT_DIR="$possible_dir"
+    break
+  fi
+done
+
+if [ -z "$SCRIPT_DIR" ]; then
+  echo "[ezdora][lazydocker] ERRO: Não foi possível encontrar o diretório do repositório ezdora"
+  echo "[ezdora][lazydocker] Procurou em:"
+  echo "[ezdora][lazydocker]   - $(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  echo "[ezdora][lazydocker]   - $HOME/Devel/ezdora"
+  echo "[ezdora][lazydocker]   - $HOME/.local/share/ezdora"
+  echo "[ezdora][lazydocker]   - /opt/ezdora"
+  exit 1
+fi
 
 echo "[ezdora][lazydocker] Adicionando ícones ao tema hicolor existente..."
 
