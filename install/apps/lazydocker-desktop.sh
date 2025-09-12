@@ -14,22 +14,37 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "[ezdora][lazydocker] Adicionando ícones ao tema hicolor existente..."
 
 # Create directory structure and install icons
+echo "[ezdora][lazydocker] SCRIPT_DIR: $SCRIPT_DIR"
+echo "[ezdora][lazydocker] Verificando arquivos base64..."
+
 for size in 16x16 32x32 48x48 64x64; do
   TARGET_DIR="$HICOLOR_DIR/${size}/apps"
   mkdir -p "$TARGET_DIR"
   
   ICON_FILE="$TARGET_DIR/lazydocker.png"
+  BASE64_FILE="$SCRIPT_DIR/assets/icons/lazydocker/${size}.base64"
+  
+  echo "[ezdora][lazydocker] Processando ícone ${size}..."
+  echo "[ezdora][lazydocker] Arquivo base64: $BASE64_FILE"
+  
   if [ ! -f "$ICON_FILE" ]; then
-    echo "[ezdora][lazydocker] Instalando ícone ${size}..."
-    if [ -f "$SCRIPT_DIR/assets/icons/lazydocker/${size}.base64" ]; then
-      if base64 -d "$SCRIPT_DIR/assets/icons/lazydocker/${size}.base64" > "$ICON_FILE" 2>/dev/null; then
-        echo "[ezdora][lazydocker] Ícone ${size} criado com sucesso"
+    if [ -f "$BASE64_FILE" ]; then
+      echo "[ezdora][lazydocker] Arquivo base64 encontrado, decodificando..."
+      if base64 -d "$BASE64_FILE" > "$ICON_FILE" 2>/dev/null; then
+        if [ -f "$ICON_FILE" ] && [ -s "$ICON_FILE" ]; then
+          echo "[ezdora][lazydocker] Ícone ${size} criado com sucesso ($(stat -c%s "$ICON_FILE") bytes)"
+        else
+          echo "[ezdora][lazydocker] Erro: Arquivo de ícone criado mas está vazio"
+          rm -f "$ICON_FILE"
+        fi
       else
         echo "[ezdora][lazydocker] Erro ao decodificar ícone ${size}"
         rm -f "$ICON_FILE"
       fi
     else
-      echo "[ezdora][lazydocker] Arquivo base64 não encontrado: ${size}.base64"
+      echo "[ezdora][lazydocker] ERRO: Arquivo base64 não encontrado: $BASE64_FILE"
+      echo "[ezdora][lazydocker] Listando conteúdo do diretório:"
+      ls -la "$SCRIPT_DIR/assets/icons/lazydocker/" 2>/dev/null || echo "Diretório não existe!"
     fi
   else
     echo "[ezdora][lazydocker] Ícone ${size} já existe"
