@@ -42,5 +42,51 @@ if getent group docker >/dev/null 2>&1; then
   sudo usermod -aG docker "$USER" || true
 fi
 
-echo "[ezdora][docker] Docker instalado. Abra uma nova sessão para aplicar grupo 'docker'."
+echo "[ezdora][docker] Docker instalado com sucesso!"
+
+# Verificar se precisa aplicar permissões
+if ! docker ps >/dev/null 2>&1; then
+  echo ""
+  echo "[ezdora][docker] ⚠️  Você foi adicionado ao grupo 'docker' mas as permissões ainda não estão ativas."
+  
+  if command -v gum >/dev/null 2>&1; then
+    echo ""
+    ACTION=$(gum choose \
+      --header "Como deseja proceder?" \
+      "Aplicar temporariamente (só neste terminal)" \
+      "Instruções para aplicar permanentemente" \
+      "Pular por enquanto")
+    
+    case "$ACTION" in
+      "Aplicar temporariamente"*)
+        echo "[ezdora][docker] Aplicando permissões temporariamente..."
+        exec sg docker -c "bash --rcfile <(echo 'PS1=\"[docker-temp] \$PS1\"'; cat ~/.bashrc 2>/dev/null || true)"
+        ;;
+      "Instruções"*)
+        gum style \
+          --border double \
+          --border-foreground 212 \
+          --padding "1 2" \
+          --margin "1" \
+          "Para aplicar permanentemente:" \
+          "" \
+          "1. Salve seu trabalho" \
+          "2. Faça logout (ou reinicie)" \
+          "3. Faça login novamente" \
+          "4. Execute: docker ps (para testar)"
+        ;;
+      *)
+        echo "[ezdora][docker] Ok! Lembre-se de fazer logout/login para usar Docker sem sudo."
+        ;;
+    esac
+  else
+    echo "[ezdora][docker] Para usar Docker sem sudo, você PRECISA:"
+    echo "[ezdora][docker]   1. Fazer logout e login novamente (ou reiniciar)"
+    echo "[ezdora][docker]   2. Depois execute: docker ps (para testar)"
+    echo ""
+    echo "[ezdora][docker] Alternativa temporária: exec sg docker -c bash"
+  fi
+else
+  echo "[ezdora][docker] ✅ Docker já está funcionando corretamente!"
+fi
 

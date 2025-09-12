@@ -26,8 +26,76 @@ if ! confirm "Deseja configurar Windows 11 (Docker) e conexão RDP agora?"; then
 fi
 
 if ! have docker; then
-  echo "[ezdora][docker-win11] Docker não encontrado. Execute 'bash install/apps/docker.sh' e rode este script novamente." >&2
-  exit 0
+  echo "[ezdora][docker-win11] Docker não encontrado." >&2
+  
+  if have gum; then
+    if gum confirm "Docker não está instalado. Deseja instalar agora?"; then
+      echo "[ezdora][docker-win11] Instalando Docker..."
+      bash "$(dirname "$0")/docker.sh"
+      
+      # Após instalar, continuar com o script em nova sessão se necessário
+      if ! docker ps >/dev/null 2>&1; then
+        echo ""
+        echo "[ezdora][docker-win11] Docker instalado! Aplicando permissões temporariamente para continuar..."
+        exec sg docker -c "$0 $*"
+      fi
+    else
+      echo "[ezdora][docker-win11] Instalação cancelada."
+      exit 0
+    fi
+  else
+    echo "[ezdora][docker-win11] Execute 'bash install/apps/docker.sh' primeiro." >&2
+    exit 0
+  fi
+fi
+
+# Check if user can run Docker without sudo
+if ! docker ps >/dev/null 2>&1; then
+  echo "[ezdora][docker-win11] Detectado problema de permissão Docker." >&2
+  
+  # Tentar resolver automaticamente
+  if groups | grep -q docker; then
+    # Usuário está no grupo mas não aplicou ainda
+    echo "[ezdora][docker-win11] Você está no grupo docker mas as permissões não estão ativas."
+    
+    if have gum; then
+      ACTION=$(gum choose \
+        --header "Como deseja proceder?" \
+        "Continuar com permissão temporária" \
+        "Aplicar permanentemente (logout necessário)" \
+        "Cancelar")
+      
+      case "$ACTION" in
+        "Continuar com permissão temporária")
+          echo "[ezdora][docker-win11] Reiniciando script com permissões Docker..."
+          exec sg docker -c "$0 $*"
+          ;;
+        "Aplicar permanentemente"*)
+          gum style \
+            --border double \
+            --border-foreground 212 \
+            --padding "1 2" \
+            "Faça logout e login, depois execute novamente:" \
+            "" \
+            "bash $0"
+          exit 0
+          ;;
+        *)
+          exit 0
+          ;;
+      esac
+    else
+      echo "[ezdora][docker-win11] Tentando aplicar permissões temporariamente..."
+      exec sg docker -c "$0 $*"
+    fi
+  else
+    # Usuário não está no grupo docker
+    echo "[ezdora][docker-win11] Adicionando você ao grupo docker..."
+    sudo usermod -aG docker "$USER"
+    
+    echo "[ezdora][docker-win11] Aplicando permissões temporariamente para continuar..."
+    exec sg docker -c "$0 $*"
+  fi
 fi
 
 # Vars

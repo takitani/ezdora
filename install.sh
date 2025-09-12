@@ -26,8 +26,15 @@ fi
 echo "[ezdora] Atualizando sistema (dnf upgrade --refresh)..."
 sudo dnf upgrade --refresh -y
 
-echo "[ezdora] Instalando dependências base (git, curl, flatpak, dnf-plugins-core)..."
-sudo dnf install -y git curl flatpak dnf-plugins-core
+echo "[ezdora] Instalando dependências base (git, curl, flatpak, dnf-plugins-core, gum)..."
+sudo dnf install -y git curl flatpak dnf-plugins-core gum || {
+  # Se gum não estiver disponível no repo padrão, tentar com COPR
+  echo "[ezdora] Tentando instalar gum via COPR..."
+  sudo dnf copr enable -y alcortesm/gum 2>/dev/null || true
+  sudo dnf install -y gum 2>/dev/null || {
+    echo "[ezdora] Aviso: gum não pôde ser instalado, interface interativa limitada."
+  }
+}
 
 echo "[ezdora] Configurando Flathub (user) se necessário..."
 flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
