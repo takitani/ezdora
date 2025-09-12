@@ -56,10 +56,15 @@ fi
 
 # Step 3: Remove/disable Konsole Ctrl+Alt+T shortcut if it exists
 if grep -q "org.kde.konsole" "$SHORTCUTS_FILE" 2>/dev/null; then
-  # Use sed to disable Konsole shortcut
-  sed -i '/\[services\]\[org.kde.konsole.desktop\]/,/^$/s/_launch=.*/_launch=none/' "$SHORTCUTS_FILE" 2>/dev/null || true
-  sed -i '/\[org.kde.konsole.desktop\]/,/^$/s/_launch=.*/_launch=none,none,Konsole/' "$SHORTCUTS_FILE" 2>/dev/null || true
-  echo "[ezdora][kde] Atalho Ctrl+Alt+T do Konsole desabilitado"
+  # Check if Konsole shortcut is already disabled
+  if ! grep -q "_launch=none" "$SHORTCUTS_FILE" 2>/dev/null; then
+    # Use sed to disable Konsole shortcut
+    sed -i '/\[services\]\[org.kde.konsole.desktop\]/,/^$/s/_launch=.*/_launch=none/' "$SHORTCUTS_FILE" 2>/dev/null || true
+    sed -i '/\[org.kde.konsole.desktop\]/,/^$/s/_launch=.*/_launch=none,none,Konsole/' "$SHORTCUTS_FILE" 2>/dev/null || true
+    echo "[ezdora][kde] Atalho Ctrl+Alt+T do Konsole desabilitado"
+  else
+    echo "[ezdora][kde] Atalho do Konsole já está desabilitado"
+  fi
 fi
 
 # Step 4: Add Ghostty shortcut configuration
@@ -74,21 +79,38 @@ _launch=Ctrl+Alt+T,none,Launch Ghostty Terminal
 EOF
   echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
 else
-  # Update existing configuration
-  sed -i '/\[ghostty.desktop\]/,/^$/s/_launch=.*/_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal/' "$SHORTCUTS_FILE"
-  echo "[ezdora][kde] Atalho Ctrl+Alt+T atualizado para Ghostty"
+  # Check if the shortcut is already correctly configured
+  if grep -q "_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal" "$SHORTCUTS_FILE" 2>/dev/null; then
+    echo "[ezdora][kde] Atalho Ctrl+Alt+T já está configurado para Ghostty"
+  else
+    # Update existing configuration
+    sed -i '/\[ghostty.desktop\]/,/^$/s/_launch=.*/_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal/' "$SHORTCUTS_FILE"
+    echo "[ezdora][kde] Atalho Ctrl+Alt+T atualizado para Ghostty"
+  fi
 fi
 
-# Step 5: Restart kglobalaccel to apply changes
-echo "[ezdora][kde] Reiniciando kglobalaccel..."
-killall kglobalaccel5 2>/dev/null || killall kglobalaccel 2>/dev/null || true
-sleep 1
-if command -v kglobalaccel5 >/dev/null 2>&1; then
-  kglobalaccel5 &
-  disown
-elif command -v kglobalaccel >/dev/null 2>&1; then
-  kglobalaccel &
-  disown
+# Step 5: Restart kglobalaccel to apply changes only if changes were made
+CHANGES_MADE=false
+if grep -q "_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal" "$SHORTCUTS_FILE" 2>/dev/null; then
+  # Only restart if this run made actual changes (check if backup was created this run)
+  if [ -f "$SHORTCUTS_FILE.ezdora.bak" ] && [ "$SHORTCUTS_FILE" -nt "$SHORTCUTS_FILE.ezdora.bak" ]; then
+    CHANGES_MADE=true
+  fi
+fi
+
+if [ "$CHANGES_MADE" = true ]; then
+  echo "[ezdora][kde] Reiniciando kglobalaccel para aplicar mudanças..."
+  killall kglobalaccel5 2>/dev/null || killall kglobalaccel 2>/dev/null || true
+  sleep 1
+  if command -v kglobalaccel5 >/dev/null 2>&1; then
+    kglobalaccel5 &
+    disown
+  elif command -v kglobalaccel >/dev/null 2>&1; then
+    kglobalaccel &
+    disown
+  fi
+else
+  echo "[ezdora][kde] Nenhuma mudança necessária, kglobalaccel não reiniciado"
 fi
 
 echo "[ezdora][kde] Configuração do atalho concluída!"
