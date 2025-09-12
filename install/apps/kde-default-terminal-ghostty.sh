@@ -29,6 +29,13 @@ fi
 
 echo "[ezdora][kde] Configurando atalho Ctrl+Alt+T para Ghostty..."
 
+# Faz backup do arquivo de atalhos antes de modificar
+SHORTCUTS_FILE="$HOME/.config/kglobalshortcutsrc"
+if [ -f "$SHORTCUTS_FILE" ] && [ ! -f "$SHORTCUTS_FILE.ezdora.bak" ]; then
+  cp "$SHORTCUTS_FILE" "$SHORTCUTS_FILE.ezdora.bak"
+  echo "[ezdora][kde] Backup criado: $SHORTCUTS_FILE.ezdora.bak"
+fi
+
 # Limpa atalhos conflitantes do Konsole primeiro
 $KW --file kglobalshortcutsrc --group "org.kde.konsole.desktop" --key "_launch" "none,none,Konsole"
 
