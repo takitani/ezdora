@@ -331,8 +331,8 @@ cat > "$START_DESKTOP" <<'DESKTOP_EOF'
 [Desktop Entry]
 Name=🚀 Windows 11 Docker - Start
 Comment=Iniciar máquina virtual Windows 11 no Docker
-Exec=bash -c 'cd ~/.config/ezdora && docker compose -f docker-compose-win11.yml up -d && notify-send "Windows 11 Docker" "Container iniciado! Abra o Web Viewer para acompanhar." --icon=docker'
-Icon=docker
+Exec=bash -c 'cd ~/.config/ezdora && docker compose -f docker-compose-win11.yml up -d && notify-send "Windows 11 Docker" "Container iniciado! Abra o Web Viewer para acompanhar." --icon=virtualbox'
+Icon=virtualbox
 Terminal=false
 Type=Application
 Categories=System;Utility;
@@ -345,8 +345,8 @@ cat > "$STOP_DESKTOP" <<'DESKTOP_EOF'
 [Desktop Entry]
 Name=🛑 Windows 11 Docker - Stop
 Comment=Parar máquina virtual Windows 11 no Docker
-Exec=bash -c 'cd ~/.config/ezdora && docker compose -f docker-compose-win11.yml down && notify-send "Windows 11 Docker" "Container parado com sucesso." --icon=docker'
-Icon=docker
+Exec=bash -c 'cd ~/.config/ezdora && docker compose -f docker-compose-win11.yml down && notify-send "Windows 11 Docker" "Container parado com sucesso." --icon=virtualbox'
+Icon=virtualbox
 Terminal=false
 Type=Application
 Categories=System;Utility;
@@ -360,7 +360,7 @@ cat > "$VIEWER_DESKTOP" <<'DESKTOP_EOF'
 Name=🌍 Windows 11 Docker - Web Viewer
 Comment=Abrir o visualizador web do Windows 11
 Exec=bash -c 'xdg-open "http://localhost:8006" || firefox "http://localhost:8006" || google-chrome "http://localhost:8006"'
-Icon=docker
+Icon=applications-internet
 Terminal=false
 Type=Application
 Categories=System;Utility;
@@ -373,8 +373,8 @@ cat > "$STATUS_DESKTOP" <<'DESKTOP_EOF'
 [Desktop Entry]
 Name=📊 Windows 11 Docker - Status
 Comment=Ver status e controlar o Windows 11 Docker
-Exec=bash -c 'cd ~/.config/ezdora && STATUS=$(docker compose -f docker-compose-win11.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null) && if echo "$STATUS" | grep -q "Up"; then notify-send "Windows 11 Docker" "Status: EXECUTANDO\n\nWeb Viewer: http://localhost:8006\nRDP: localhost:3389" --icon=docker; else notify-send "Windows 11 Docker" "Status: PARADO\n\nUse o atalho Start para iniciar." --icon=docker; fi'
-Icon=docker
+Exec=bash -c 'cd ~/.config/ezdora && STATUS=$(docker compose -f docker-compose-win11.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null) && if echo "$STATUS" | grep -q "Up"; then notify-send "Windows 11 Docker" "Status: EXECUTANDO\n\nWeb Viewer: http://localhost:8006\nRDP: localhost:3389" --icon=dialog-information; else notify-send "Windows 11 Docker" "Status: PARADO\n\nUse o atalho Start para iniciar." --icon=dialog-information; fi'
+Icon=dialog-information
 Terminal=false
 Type=Application
 Categories=System;Utility;
