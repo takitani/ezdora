@@ -1,76 +1,86 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[ezdora][ghostty-clipboard] Configurando correção de clipboard para Ghostty no Wayland..."
+echo "[ezdora][clipboard-sync] Configurando sincronização de clipboard Wayland-X11..."
 
-# Ensure wl-clipboard is installed
+# Ensure required packages are installed
 if ! command -v wl-copy >/dev/null 2>&1; then
-  echo "[ezdora][ghostty-clipboard] Instalando wl-clipboard..."
+  echo "[ezdora][clipboard-sync] Instalando wl-clipboard..."
   sudo dnf install -y wl-clipboard
 fi
+
+if ! command -v xclip >/dev/null 2>&1; then
+  echo "[ezdora][clipboard-sync] Instalando xclip..."
+  sudo dnf install -y xclip
+fi
+
+# Create the sync script
+SCRIPT_DIR="$HOME/.local/bin"
+mkdir -p "$SCRIPT_DIR"
+
+cat > "$SCRIPT_DIR/wayland-x11-clipboard-sync" <<'EOF'
+#!/bin/bash
+# Sincronizador de clipboard Wayland <-> X11 para KDE Plasma
+# Resolve problemas de Ctrl+V em apps GTK/Electron no KDE Wayland
+
+echo "Starting Wayland-X11 clipboard sync..."
+
+# Variáveis para controlar o estado
+last_wayland_content=""
+
+while true; do
+    # Sincroniza Wayland -> X11 (para imagens)
+    if wl-paste --list-types 2>/dev/null | grep -qi "image"; then
+        current_wayland=$(wl-paste 2>/dev/null | md5sum)
+        if [ "$current_wayland" != "$last_wayland_content" ]; then
+            wl-paste 2>/dev/null | xclip -selection clipboard -t image/png 2>/dev/null
+            last_wayland_content="$current_wayland"
+            echo "$(date): Synced image Wayland -> X11"
+        fi
+    fi
+    
+    # Sincroniza texto também
+    if wl-paste --list-types 2>/dev/null | grep -qi "text"; then
+        current_text=$(wl-paste -t text 2>/dev/null | md5sum)
+        if [ "$current_text" != "$last_wayland_content" ]; then
+            wl-paste -t text 2>/dev/null | xclip -selection clipboard 2>/dev/null
+            last_wayland_content="$current_text"
+        fi
+    fi
+    
+    sleep 0.3
+done
+EOF
+
+chmod +x "$SCRIPT_DIR/wayland-x11-clipboard-sync"
 
 # Create systemd user service for clipboard synchronization
 SERVICE_DIR="$HOME/.config/systemd/user"
 mkdir -p "$SERVICE_DIR"
 
-cat > "$SERVICE_DIR/ghostty-clipboard-sync.service" <<'EOF'
+cat > "$SERVICE_DIR/clipboard-sync.service" <<'EOF'
 [Unit]
-Description=Ghostty Wayland Clipboard Synchronization
+Description=Wayland-X11 Clipboard Sync for KDE
 After=graphical-session.target
+PartOf=graphical-session.target
 
 [Service]
 Type=simple
+ExecStart=/home/opik/.local/bin/wayland-x11-clipboard-sync
 Restart=always
 RestartSec=1
-ExecStart=/usr/bin/bash -c 'while true; do wl-paste --watch cat; done'
-StandardOutput=null
-StandardError=journal
 
 [Install]
 WantedBy=default.target
 EOF
 
-# Enable OSC-52 in Ghostty config for clipboard integration
-CFG_DIR="$HOME/.config/ghostty"
-CFG_FILE="$CFG_DIR/config"
-mkdir -p "$CFG_DIR"
-
-if [ -f "$CFG_FILE" ]; then
-  # Backup existing config
-  cp "$CFG_FILE" "${CFG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
-  
-  # Add OSC-52 settings if not present
-  if ! grep -q "osc-52-clipboard-read" "$CFG_FILE"; then
-    echo "osc-52-clipboard-read = allow" >> "$CFG_FILE"
-  fi
-  
-  if ! grep -q "osc-52-clipboard-write" "$CFG_FILE"; then
-    echo "osc-52-clipboard-write = allow" >> "$CFG_FILE"
-  fi
-  
-  if ! grep -q "clipboard-read" "$CFG_FILE"; then
-    echo "clipboard-read = allow" >> "$CFG_FILE"
-  fi
-  
-  if ! grep -q "clipboard-write" "$CFG_FILE"; then
-    echo "clipboard-write = allow" >> "$CFG_FILE"
-  fi
-else
-  # Create new config with clipboard settings
-  cat > "$CFG_FILE" <<'EOF'
-# Ghostty Wayland Clipboard Configuration
-osc-52-clipboard-read = allow
-osc-52-clipboard-write = allow
-clipboard-read = allow
-clipboard-write = allow
-EOF
-fi
+# Replace /home/opik with actual home path
+sed -i "s|/home/opik|$HOME|g" "$SERVICE_DIR/clipboard-sync.service"
 
 # Reload systemd user daemon and enable service
 systemctl --user daemon-reload
-systemctl --user enable ghostty-clipboard-sync.service
-systemctl --user restart ghostty-clipboard-sync.service
+systemctl --user enable clipboard-sync.service
+systemctl --user restart clipboard-sync.service
 
-echo "[ezdora][ghostty-clipboard] Service configurado e ativado!"
-echo "[ezdora][ghostty-clipboard] Para verificar status: systemctl --user status ghostty-clipboard-sync"
-echo "[ezdora][ghostty-clipboard] OSC-52 habilitado no Ghostty para suporte a clipboard"
+echo "[ezdora][clipboard-sync] Service configurado e ativado!"
+echo "[ezdora][clipboard-sync] Para verificar status: systemctl --user status clipboard-sync"
