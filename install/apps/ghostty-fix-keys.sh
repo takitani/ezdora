@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[ezdora][ghostty-keys] Corrigindo teclas Home/End no Ghostty..."
+echo "[ezdora][ghostty-keys] ⚠️  SCRIPT DESABILITADO"
+echo ""
+echo "Este script foi desabilitado porque Home/End deveriam funcionar nativamente."
+echo "Se não funcionam, o problema provavelmente NÃO é no Ghostty."
+echo ""
+echo "Execute o diagnóstico primeiro:"
+echo "  bash install/apps/ghostty-diagnose.sh"
+echo ""
+echo "Possíveis causas:"
+echo "  - Layout de teclado KDE interferindo"
+echo "  - Configurações globais do KDE"
+echo "  - Problema na instalação do Ghostty"
+echo ""
+exit 0
 
+# CÓDIGO ORIGINAL COMENTADO:
 # Verificar se Ghostty está instalado
 if ! command -v ghostty >/dev/null 2>&1 && ! rpm -q ghostty >/dev/null 2>&1; then
   echo "[ezdora][ghostty-keys] Ghostty não instalado. Pulando configuração."
