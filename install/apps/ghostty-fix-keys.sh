@@ -31,23 +31,27 @@ fi
 # Adicionar configurações de teclado ao final do arquivo
 cat >> "$GHOSTTY_CONFIG_FILE" << 'EOF'
 
-# Correção para teclas Home/End - múltiplas variações para compatibilidade
-keybind = home=text:\x1b[1~
-keybind = end=text:\x1b[4~
-keybind = shift+home=text:\x1b[1;2~
-keybind = shift+end=text:\x1b[4;2~
+# Correção para teclas Home/End - sequências corretas para aplicações
+keybind = home=text:\x1bOH
+keybind = end=text:\x1bOF
+keybind = shift+home=text:\x1b[1;2H
+keybind = shift+end=text:\x1b[1;2F
+keybind = ctrl+home=text:\x1b[1;5H
+keybind = ctrl+end=text:\x1b[1;5F
 
-# Alternativas mais comuns
-keybind = ctrl+a=text:\x01
-keybind = ctrl+e=text:\x05
+# Alternativas para diferentes aplicações
+keybind = alt+home=text:\x1b[H
+keybind = alt+end=text:\x1b[F
 
 # Page navigation
 keybind = page_up=text:\x1b[5~
 keybind = page_down=text:\x1b[6~
+keybind = shift+page_up=text:\x1b[5;2~
+keybind = shift+page_down=text:\x1b[6;2~
 
-# Alternative Home/End sequences
-keybind = alt+home=text:\x1b[H
-keybind = alt+end=text:\x1b[F
+# Fallback para aplicações específicas
+keybind = ctrl+shift+home=text:\x1b[1~
+keybind = ctrl+shift+end=text:\x1b[4~
 EOF
 
 echo "[ezdora][ghostty-keys] Configuração salva em: $GHOSTTY_CONFIG_FILE"
