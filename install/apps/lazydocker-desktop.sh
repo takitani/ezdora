@@ -5,32 +5,13 @@ APP_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons"
 mkdir -p "$APP_DIR" "$ICON_DIR"
 
-# Download and resize LazyDocker official icon
+# Create LazyDocker official icon from embedded base64
 ICON_PATH="$ICON_DIR/lazydocker.png"
 if [ ! -f "$ICON_PATH" ]; then
-  echo "[ezdora][lazydocker] Baixando e redimensionando ícone oficial..."
-  TEMP_ICON="/tmp/lazydocker_original.png"
-  
-  if command -v curl >/dev/null 2>&1; then
-    if curl -fsSL "https://user-images.githubusercontent.com/8456633/59972109-8e9c8480-95cc-11e9-8350-38f7f86ba76d.png" -o "$TEMP_ICON" 2>/dev/null; then
-      # Try to resize with available tools
-      if command -v convert >/dev/null 2>&1; then
-        convert "$TEMP_ICON" -resize 64x64 "$ICON_PATH" 2>/dev/null
-      elif command -v magick >/dev/null 2>&1; then
-        magick "$TEMP_ICON" -resize 64x64 "$ICON_PATH" 2>/dev/null
-      else
-        # Fallback: just copy the original (will be larger but works)
-        cp "$TEMP_ICON" "$ICON_PATH" 2>/dev/null
-      fi
-      rm -f "$TEMP_ICON"
-    else
-      echo "[ezdora][lazydocker] Falha ao baixar ícone, usando fallback"
-      ICON_PATH="utilities-terminal"
-    fi
-  else
-    echo "[ezdora][lazydocker] curl não disponível, usando ícone padrão"
-    ICON_PATH="utilities-terminal"
-  fi
+  echo "[ezdora][lazydocker] Criando ícone oficial..."
+  base64 -d <<'EOF' > "$ICON_PATH"
+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
+EOF
 else
   echo "[ezdora][lazydocker] Ícone já existe: $ICON_PATH"
 fi
