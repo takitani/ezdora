@@ -29,22 +29,22 @@ fi
 
 echo "[ezdora][kde] Configurando atalho Ctrl+Alt+T para Ghostty..."
 
-# Verifica se já existe a configuração para evitar duplicação
-CURRENT_VALUE=$(kreadconfig6 --file kglobalshortcutsrc --group "services][com.mitchellh.ghostty.desktop" --key "_launch" 2>/dev/null || echo "")
+# Limpa atalhos conflitantes do Konsole primeiro
+$KW --file kglobalshortcutsrc --group "org.kde.konsole.desktop" --key "_launch" "none,none,Konsole"
 
-if [ "$CURRENT_VALUE" = "Ctrl+Alt+T" ]; then
-  echo "[ezdora][kde] Atalho Ctrl+Alt+T já configurado para Ghostty"
-else
-  # Configura o atalho no arquivo kglobalshortcutsrc
-  $KW --file kglobalshortcutsrc --group "services][com.mitchellh.ghostty.desktop" --key "_launch" "Ctrl+Alt+T"
-  echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
-  
-  # Recarrega os atalhos globais
-  if command -v kquitapp6 >/dev/null 2>&1; then
-    kquitapp6 kglobalaccel 2>/dev/null || true
-    sleep 1
-  elif command -v kquitapp5 >/dev/null 2>&1; then
-    kquitapp5 kglobalaccel 2>/dev/null || true
-    sleep 1
-  fi
+# Configura o atalho para o Ghostty de forma mais completa
+# Formato: "shortcut,default,description"
+$KW --file kglobalshortcutsrc --group "com.mitchellh.ghostty.desktop" --key "_launch" "Ctrl+Alt+T,Ctrl+Alt+T,Launch Ghostty"
+$KW --file kglobalshortcutsrc --group "com.mitchellh.ghostty.desktop" --key "_k_friendly_name" "Ghostty"
+
+# Também adiciona na seção services (alguns KDE usam isso)
+$KW --file kglobalshortcutsrc --group "services][com.mitchellh.ghostty.desktop" --key "_launch" "Ctrl+Alt+T"
+
+echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
+
+# Recarrega os atalhos globais
+if command -v qdbus6 >/dev/null 2>&1; then
+  qdbus6 org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.reloadConfig 2>/dev/null || true
+elif command -v qdbus >/dev/null 2>&1; then
+  qdbus org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.reloadConfig 2>/dev/null || true
 fi
