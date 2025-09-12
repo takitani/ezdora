@@ -68,26 +68,19 @@ if grep -q "org.kde.konsole" "$SHORTCUTS_FILE" 2>/dev/null; then
 fi
 
 # Step 4: Add Ghostty shortcut configuration
-# Check if ghostty.desktop section already exists
-if ! grep -q "\[ghostty.desktop\]" "$SHORTCUTS_FILE" 2>/dev/null; then
-  # Add the Ghostty shortcut configuration
-  cat >> "$SHORTCUTS_FILE" << 'EOF'
+# Remove existing broken entries first
+sed -i '/\[ghostty.desktop\]/,/^$/d' "$SHORTCUTS_FILE" 2>/dev/null || true
+sed -i '/\[services\]\[ghostty.desktop\]/,/^$/d' "$SHORTCUTS_FILE" 2>/dev/null || true
+
+# Add clean Ghostty shortcut configuration
+cat >> "$SHORTCUTS_FILE" << 'EOF'
 
 [ghostty.desktop]
 _k_friendly_name=Ghostty
 _launch=Ctrl+Alt+T,none,Launch Ghostty Terminal
 EOF
-  echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
-else
-  # Check if the shortcut is already correctly configured
-  if grep -q "_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal" "$SHORTCUTS_FILE" 2>/dev/null; then
-    echo "[ezdora][kde] Atalho Ctrl+Alt+T já está configurado para Ghostty"
-  else
-    # Update existing configuration
-    sed -i '/\[ghostty.desktop\]/,/^$/s/_launch=.*/_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal/' "$SHORTCUTS_FILE"
-    echo "[ezdora][kde] Atalho Ctrl+Alt+T atualizado para Ghostty"
-  fi
-fi
+
+echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty (limpeza e reconfiguração)"
 
 # Step 5: Restart kglobalaccel to apply changes only if changes were made
 CHANGES_MADE=false
