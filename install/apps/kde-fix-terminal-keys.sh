@@ -94,7 +94,10 @@ fi
 echo "🔧 Correção 5: Configurações de emulação de terminal"
 
 # Set proper TERM variables for terminals
-cat >> ~/.zshrc << 'EOF'
+if [ -f ~/.zshrc ]; then
+  # Only add if not already present
+  if ! grep -q "KDE Terminal fixes for Home/End keys" ~/.zshrc 2>/dev/null; then
+    cat >> ~/.zshrc << 'EOF'
 
 # KDE Terminal fixes for Home/End keys
 if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
@@ -108,6 +111,33 @@ if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
     bindkey "^[[4~" end-of-line         # Alternative End
 fi
 EOF
+    echo "Adicionadas correções ao ~/.zshrc"
+  else
+    echo "Correções já existem no ~/.zshrc"
+  fi
+else
+  echo "~/.zshrc não existe, pulando correções do ZSH"
+fi
+
+# Also try bash if it exists
+if [ -f ~/.bashrc ]; then
+  if ! grep -q "KDE Terminal fixes for Home/End keys" ~/.bashrc 2>/dev/null; then
+    cat >> ~/.bashrc << 'EOF'
+
+# KDE Terminal fixes for Home/End keys  
+if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
+    # Fix Home/End keys in bash
+    bind '"\e[H": beginning-of-line'  # Home
+    bind '"\e[F": end-of-line'        # End
+    bind '"\e[1~": beginning-of-line' # Alternative Home
+    bind '"\e[4~": end-of-line'       # Alternative End
+fi
+EOF
+    echo "Adicionadas correções ao ~/.bashrc"
+  else
+    echo "Correções já existem no ~/.bashrc"
+  fi
+fi
 
 echo ""
 echo "✅ Correções aplicadas!"
@@ -124,11 +154,35 @@ echo ""
 
 if command -v gum >/dev/null 2>&1; then
   if gum confirm "Reiniciar sessão KDE agora?"; then
-    qdbus org.kde.ksmserver /KSMServer logout 1 3 3
+    # Try different methods to logout/restart KDE session
+    if command -v qdbus6 >/dev/null 2>&1; then
+      qdbus6 org.kde.ksmserver /KSMServer logout 1 3 3
+    elif command -v qdbus >/dev/null 2>&1; then
+      qdbus org.kde.ksmserver /KSMServer logout 1 3 3  
+    elif command -v loginctl >/dev/null 2>&1; then
+      loginctl terminate-session "$XDG_SESSION_ID"
+    else
+      echo "Não foi possível reiniciar automaticamente."
+      echo "Execute manualmente: logout ou reinicie o sistema"
+    fi
   fi
 else
   read -r -p "Reiniciar sessão KDE agora? [y/N] " restart_kde
   if [[ ${restart_kde:-} =~ ^[Yy]$ ]]; then
-    qdbus org.kde.ksmserver /KSMServer logout 1 3 3
+    # Try different methods to logout/restart KDE session
+    if command -v qdbus6 >/dev/null 2>&1; then
+      qdbus6 org.kde.ksmserver /KSMServer logout 1 3 3
+    elif command -v qdbus >/dev/null 2>&1; then
+      qdbus org.kde.ksmserver /KSMServer logout 1 3 3  
+    elif command -v loginctl >/dev/null 2>&1; then
+      loginctl terminate-session "$XDG_SESSION_ID"
+    else
+      echo "Não foi possível reiniciar automaticamente."
+      echo "Execute manualmente: logout ou reinicie o sistema"
+    fi
   fi
 fi
+
+echo ""
+echo "[ezdora][kde-terminal-fix] Script concluído!"
+echo "As correções foram aplicadas. Faça logout/login para testar."
