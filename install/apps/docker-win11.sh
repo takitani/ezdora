@@ -73,7 +73,7 @@ if ! docker ps >/dev/null 2>&1; then
         "Aplicar permanentemente"*)
           gum style \
             --border double \
-            --border-foreground 212 \
+            --border-foreground 39 \
             --padding "1 2" \
             "Faça logout e login, depois execute novamente:" \
             "" \
@@ -241,8 +241,8 @@ echo "[ezdora][docker-win11] Pronto. Monitore a instalação pelo web viewer; de
 echo
 if command -v gum >/dev/null 2>&1; then
   gum style \
-    --foreground 212 \
-    --border-foreground 212 \
+    --foreground 39 \
+    --border-foreground 39 \
     --border double \
     --align center \
     --width 60 \

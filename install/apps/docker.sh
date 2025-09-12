@@ -66,7 +66,7 @@ if ! docker ps >/dev/null 2>&1; then
       "Instruções"*)
         gum style \
           --border double \
-          --border-foreground 212 \
+          --border-foreground 39 \
           --padding "1 2" \
           --margin "1" \
           "Para aplicar permanentemente:" \
