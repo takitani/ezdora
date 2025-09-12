@@ -18,7 +18,7 @@ cp "$HOME/.zshrc" "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
 # Create new .zshrc with Antigen configuration
 ZSHRC="$HOME/.zshrc"
 cat > "$ZSHRC" <<'EOF'
-# EzDora ZSH Configuration with Antigen
+# EzDora ZSH Configuration with Antigen + Starship
 
 # Basic PATH
 export PATH="$HOME/.local/bin:$PATH"
@@ -27,19 +27,11 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 # Load Antigen
 source ~/.config/antigen/antigen.zsh
 
-# Load oh-my-zsh library
-antigen use oh-my-zsh
-
-# Load bundles from the default repo (oh-my-zsh)
-antigen bundle git
-antigen bundle command-not-found
-antigen bundle docker
-
-# Load bundles from external repos
-antigen bundle zsh-users/zsh-completions
-antigen bundle zsh-users/zsh-autosuggestions
-antigen bundle zsh-users/zsh-syntax-highlighting
-antigen bundle zsh-users/zsh-history-substring-search
+# Plugins essenciais que o Starship não fornece
+antigen bundle zsh-users/zsh-completions        # Completions extras
+antigen bundle zsh-users/zsh-autosuggestions    # Sugestões em cinza
+antigen bundle zsh-users/zsh-syntax-highlighting # Sintaxe colorida
+antigen bundle zsh-users/zsh-history-substring-search # Busca com prefixo
 
 # Tell Antigen that you're done
 antigen apply
@@ -82,15 +74,20 @@ ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#666666"
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 EOF
 
-echo "[ezdora][antigen] Antigen configurado com plugins!"
+echo "[ezdora][antigen] Antigen + Starship configurados!"
 echo "[ezdora][antigen] Backup do .zshrc anterior salvo com timestamp"
-echo "[ezdora][antigen] Reinicie o terminal ou execute: source ~/.zshrc"
 echo ""
-echo "Plugins instalados:"
-echo "  - git (aliases e completions)"
-echo "  - command-not-found (sugere pacotes para comandos não encontrados)"
-echo "  - docker (completions para docker)"
-echo "  - zsh-completions (completions extras)"
-echo "  - zsh-autosuggestions (sugestões baseadas no histórico)"
-echo "  - zsh-syntax-highlighting (destaque de sintaxe)"
-echo "  - zsh-history-substring-search (busca no histórico com prefixo)"
+echo "Funcionalidades do Starship (já configurado):"
+echo "  ✓ Git status e branch"
+echo "  ✓ Docker context"
+echo "  ✓ Tempo de execução de comandos"
+echo "  ✓ Status de erro"
+echo "  ✓ Informações de linguagens (Node, Python, Rust, etc)"
+echo ""
+echo "Plugins ZSH adicionados via Antigen:"
+echo "  ✓ zsh-completions (completions extras)"
+echo "  ✓ zsh-autosuggestions (texto cinza com sugestões)"
+echo "  ✓ zsh-syntax-highlighting (comandos coloridos)"
+echo "  ✓ zsh-history-substring-search (↑↓ com prefixo)"
+echo ""
+echo "Reinicie o terminal ou execute: source ~/.zshrc"

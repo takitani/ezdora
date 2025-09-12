@@ -3,6 +3,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+# Solicita senha uma vez no início e mantém cache ativo
+echo "[ezdora] Autenticação necessária para instalação de pacotes..."
+sudo -v
+
+# Mantém o cache de sudo ativo em background durante a execução
+(while true; do sudo -n true; sleep 50; done 2>/dev/null) &
+SUDO_REFRESH_PID=$!
+
+# Função para limpar o processo de refresh ao sair
+cleanup() {
+    kill $SUDO_REFRESH_PID 2>/dev/null || true
+}
+trap cleanup EXIT
+
 # Executa todos os scripts de app em ordem alfabética
 for script in "$SCRIPT_DIR/apps"/*.sh; do
   [ -f "$script" ] || continue
