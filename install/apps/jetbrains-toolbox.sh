@@ -4,17 +4,18 @@ set -euo pipefail
 # Install JetBrains Toolbox using official tarball (best for Fedora; auto-updates itself).
 # Provides wrapper at ~/.local/bin/jetbrains-toolbox, .desktop, and autostart.
 
-# Skip only if a valid non-symlink wrapper exists AND the Toolbox binary exists
-SKIP=0
-CURRENT_BIN="$(command -v jetbrains-toolbox || true)"
-if [ -n "$CURRENT_BIN" ] && [ -f "$CURRENT_BIN" ] && [ ! -L "$CURRENT_BIN" ]; then
-  if head -c 2 "$CURRENT_BIN" 2>/dev/null | grep -q '^#!'; then
-    SKIP=1
+# Skip if JetBrains Toolbox is already installed and running
+TOOLBOX_BINARY="$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox"
+TOOLBOX_WRAPPER="$HOME/.local/bin/jetbrains-toolbox"
+
+if [ -x "$TOOLBOX_BINARY" ] && [ -f "$TOOLBOX_WRAPPER" ]; then
+  # Check if Toolbox is actually working (can show version)
+  if "$TOOLBOX_BINARY" --version >/dev/null 2>&1 || pgrep -f "jetbrains-toolbox" >/dev/null 2>&1; then
+    echo "[ezdora][toolbox] JetBrains Toolbox já está instalado e funcionando. Pulando."
+    exit 0
+  else
+    echo "[ezdora][toolbox] JetBrains Toolbox encontrado mas não está funcionando, reinstalando..."
   fi
-fi
-if [ $SKIP -eq 1 ] && [ -x "$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox" ]; then
-  echo "[ezdora][toolbox] Já instalado. Pulando."
-  exit 0
 fi
 
 # If an old symlink exists in ~/.local/bin, remove it so we always repair to a wrapper
