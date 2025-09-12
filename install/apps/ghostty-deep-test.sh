@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[ezdora][ghostty-deep] Teste profundo das teclas Home/End"
+echo "==========================================================="
+echo ""
+
+echo "🧪 TESTE 1: Captura de teclas brutas"
+echo "Execute o comando abaixo e pressione Home, depois End, depois Ctrl+C:"
+echo ""
+echo "showkey -a"
+echo ""
+read -r -p "Pressione Enter para continuar ao próximo teste..."
+
+echo ""
+echo "🧪 TESTE 2: Teste no terminal puro (sem Ghostty)"
+echo "Vamos testar no Konsole para comparação:"
+echo ""
+if command -v konsole >/dev/null 2>&1; then
+  echo "konsole --hold -e bash -c 'echo Teste Home/End no Konsole: abcdefghijklmnopqrstuvwxyz; bash'"
+  echo "Execute o comando acima e teste Home/End"
+else
+  echo "Konsole não disponível"
+fi
+echo ""
+read -r -p "Pressione Enter para continuar ao próximo teste..."
+
+echo ""
+echo "🧪 TESTE 3: Downgrade do Ghostty"
+echo "O KDE tem versão 1.1.3 (tip/dev) e GNOME tem 1.1.2 (stable)"
+echo "Pode ser um bug na versão de desenvolvimento."
+echo ""
+echo "Para testar, você pode:"
+echo "1. Downgrade para versão stable (se disponível)"
+echo "2. Ou compile a versão 1.1.2"
+echo ""
+
+echo "🧪 TESTE 4: Verificar interceptação do KDE"
+echo "Execute no terminal do Ghostty:"
+echo ""
+echo "cat -v"
+echo ""
+echo "Depois pressione Home/End e veja se aparecem caracteres"
+echo "Se não aparecer NADA, o KDE está interceptando as teclas"
+echo "Se aparecer caracteres estranhos, é problema de encoding"
+echo ""
+
+echo "🔧 POSSÍVEIS SOLUÇÕES:"
+echo ""
+echo "1. Testar com layout US puro (sem International):"
+echo "   setxkbmap us"
+echo ""
+echo "2. Verificar se é problema do Wayland:"
+echo "   - Logar numa sessão X11 do KDE e testar"
+echo ""
+echo "3. Testar Ghostty com flags diferentes:"
+echo "   ghostty --config-file /dev/null"
+echo ""
+echo "4. Bug report para o Ghostty (versão 1.1.3 tip):"
+echo "   https://github.com/ghostty-org/ghostty/issues"
