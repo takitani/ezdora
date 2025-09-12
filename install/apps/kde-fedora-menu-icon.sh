@@ -45,21 +45,25 @@ for size in 16x16 32x32 48x48 64x64 128x128 256x256; do
   
   echo "[ezdora][fedora-menu] Processando ícone ${size}..."
   
-  if [ -f "$BASE64_FILE" ]; then
-    echo "[ezdora][fedora-menu] Decodificando ícone ${size}..."
-    if base64 -d "$BASE64_FILE" > "$ICON_FILE" 2>/dev/null; then
-      if [ -f "$ICON_FILE" ] && [ -s "$ICON_FILE" ]; then
-        echo "[ezdora][fedora-menu] Ícone ${size} criado com sucesso ($(stat -c%s "$ICON_FILE") bytes)"
+  if [ ! -f "$ICON_FILE" ]; then
+    if [ -f "$BASE64_FILE" ]; then
+      echo "[ezdora][fedora-menu] Decodificando ícone ${size}..."
+      if base64 -d "$BASE64_FILE" > "$ICON_FILE" 2>/dev/null; then
+        if [ -f "$ICON_FILE" ] && [ -s "$ICON_FILE" ]; then
+          echo "[ezdora][fedora-menu] Ícone ${size} criado com sucesso ($(stat -c%s "$ICON_FILE") bytes)"
+        else
+          echo "[ezdora][fedora-menu] Erro: Arquivo de ícone criado mas está vazio"
+          rm -f "$ICON_FILE"
+        fi
       else
-        echo "[ezdora][fedora-menu] Erro: Arquivo de ícone criado mas está vazio"
+        echo "[ezdora][fedora-menu] Erro ao decodificar ícone ${size}"
         rm -f "$ICON_FILE"
       fi
     else
-      echo "[ezdora][fedora-menu] Erro ao decodificar ícone ${size}"
-      rm -f "$ICON_FILE"
+      echo "[ezdora][fedora-menu] ERRO: Arquivo base64 não encontrado: $BASE64_FILE"
     fi
   else
-    echo "[ezdora][fedora-menu] ERRO: Arquivo base64 não encontrado: $BASE64_FILE"
+    echo "[ezdora][fedora-menu] Ícone ${size} já existe"
   fi
 done
 
