@@ -60,7 +60,8 @@ if ! docker ps >/dev/null 2>&1; then
     case "$ACTION" in
       "Aplicar temporariamente"*)
         echo "[ezdora][docker] Aplicando permissões temporariamente..."
-        exec sg docker -c "bash --rcfile <(echo 'PS1=\"[docker-temp] \$PS1\"'; cat ~/.bashrc 2>/dev/null || true)"
+        # Preservar PATH e carregar configurações do shell atual
+        exec sg docker -c "PATH=\"$PATH\" bash --rcfile <(echo 'PS1=\"[docker-temp] \$PS1\"'; cat ~/.bashrc 2>/dev/null || cat ~/.zshrc 2>/dev/null || true)"
         ;;
       "Instruções"*)
         gum style \

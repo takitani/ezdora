@@ -37,7 +37,7 @@ if ! have docker; then
       if ! docker ps >/dev/null 2>&1; then
         echo ""
         echo "[ezdora][docker-win11] Docker instalado! Aplicando permissões temporariamente para continuar..."
-        exec sg docker -c "$0 $*"
+        exec sg docker -c "PATH=\"$PATH\" $0 $*"
       fi
     else
       echo "[ezdora][docker-win11] Instalação cancelada."
@@ -68,7 +68,7 @@ if ! docker ps >/dev/null 2>&1; then
       case "$ACTION" in
         "Continuar com permissão temporária")
           echo "[ezdora][docker-win11] Reiniciando script com permissões Docker..."
-          exec sg docker -c "$0 $*"
+          exec sg docker -c "PATH=\"$PATH\" $0 $*"
           ;;
         "Aplicar permanentemente"*)
           gum style \
@@ -86,7 +86,7 @@ if ! docker ps >/dev/null 2>&1; then
       esac
     else
       echo "[ezdora][docker-win11] Tentando aplicar permissões temporariamente..."
-      exec sg docker -c "$0 $*"
+      exec sg docker -c "PATH=\"$PATH\" $0 $*"
     fi
   else
     # Usuário não está no grupo docker
@@ -94,7 +94,7 @@ if ! docker ps >/dev/null 2>&1; then
     sudo usermod -aG docker "$USER"
     
     echo "[ezdora][docker-win11] Aplicando permissões temporariamente para continuar..."
-    exec sg docker -c "$0 $*"
+    exec sg docker -c "PATH=\"$PATH\" $0 $*"
   fi
 fi
 
