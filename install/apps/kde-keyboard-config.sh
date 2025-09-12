@@ -9,9 +9,17 @@ if [[ "$XDG_CURRENT_DESKTOP" != "KDE" ]] && [[ "$DESKTOP_SESSION" != *"plasma"* 
   exit 0
 fi
 
-# Verifica layouts atuais do KDE
+# Verifica layouts e variantes atuais do KDE
 current_layouts=$(kreadconfig6 --file kxkbrc --group Layout --key LayoutList 2>/dev/null || echo "")
+current_variants=$(kreadconfig6 --file kxkbrc --group Layout --key VariantList 2>/dev/null || echo "")
 echo "[ezdora][keyboard] Layouts atuais: '$current_layouts'"
+echo "[ezdora][keyboard] Variantes atuais: '$current_variants'"
+
+# Verifica se já está configurado corretamente (us,us com intl,)
+if [[ "$current_layouts" == "us,us" ]] && [[ "$current_variants" == "intl," ]]; then
+  echo "[ezdora][keyboard] Configuração já está correta (US International + US), nada a fazer"
+  exit 0
+fi
 
 # Se só tem 'us' ou está vazio, configura para ter us,us(intl) com intl como padrão
 if [[ -z "$current_layouts" ]] || [[ "$current_layouts" == "us" ]]; then
@@ -44,25 +52,21 @@ if [[ -z "$current_layouts" ]] || [[ "$current_layouts" == "us" ]]; then
   echo "[ezdora][keyboard] Reinicie a sessão ou faça logout/login para aplicar completamente"
   
 elif [[ "$current_layouts" == *"us"* ]] && [[ "$current_layouts" != *"intl"* ]]; then
-  echo "[ezdora][keyboard] Detectado EN US mas sem International, adicionando..."
+  echo "[ezdora][keyboard] Detectado EN US mas sem International, configurando..."
   
-  # Se já tem layouts mas não tem intl, adiciona o intl como primeiro
-  kwriteconfig6 --file kxkbrc --group Layout --key LayoutList "us,$current_layouts"
-  
-  # Pega variants atuais e adiciona intl no início
-  current_variants=$(kreadconfig6 --file kxkbrc --group Layout --key VariantList 2>/dev/null || echo "")
-  kwriteconfig6 --file kxkbrc --group Layout --key VariantList "intl,$current_variants"
-  
-  # Atualiza display names
-  current_displays=$(kreadconfig6 --file kxkbrc --group Layout --key DisplayNames 2>/dev/null || echo "")
-  kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "US,$current_displays"
+  # Configura us(intl) como primeiro e us como segundo, sem duplicar
+  kwriteconfig6 --file kxkbrc --group Layout --key LayoutList "us,us"
+  kwriteconfig6 --file kxkbrc --group Layout --key VariantList "intl,"
+  kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "US,US"
   
   # Habilita e configura troca
   kwriteconfig6 --file kxkbrc --group Layout --key Use true
   kwriteconfig6 --file kxkbrc --group Layout --key SwitchMode Global
   kwriteconfig6 --file kxkbrc --group Layout --key Options "grp:alt_shift_toggle"
   
-  echo "[ezdora][keyboard] EN US International adicionado como layout padrão"
+  echo "[ezdora][keyboard] EN US International configurado como layout padrão"
+  echo "  - Layout padrão: EN US International" 
+  echo "  - Layout secundário: EN US"
   echo "  - Atalho para trocar: Alt+Shift"
   
 else
