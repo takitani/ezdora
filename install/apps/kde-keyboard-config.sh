@@ -21,7 +21,7 @@ if [[ -z "$current_layouts" ]] || [[ "$current_layouts" == "us" ]]; then
   # Configura os layouts: us(intl) como primeiro (padrão), us como segundo
   kwriteconfig6 --file kxkbrc --group Layout --key LayoutList "us,us"
   kwriteconfig6 --file kxkbrc --group Layout --key VariantList "intl,"
-  kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "EN US Intl,EN US"
+  kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "US,US"
   
   # Habilita troca de teclado
   kwriteconfig6 --file kxkbrc --group Layout --key Use true
@@ -55,7 +55,7 @@ elif [[ "$current_layouts" == *"us"* ]] && [[ "$current_layouts" != *"intl"* ]];
   
   # Atualiza display names
   current_displays=$(kreadconfig6 --file kxkbrc --group Layout --key DisplayNames 2>/dev/null || echo "")
-  kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "EN US Intl,$current_displays"
+  kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "US,$current_displays"
   
   # Habilita e configura troca
   kwriteconfig6 --file kxkbrc --group Layout --key Use true
