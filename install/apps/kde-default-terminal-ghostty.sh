@@ -29,29 +29,66 @@ fi
 
 echo "[ezdora][kde] Configurando atalho Ctrl+Alt+T para Ghostty..."
 
-# Faz backup do arquivo de atalhos antes de modificar
+# Step 1: Create desktop file for Ghostty if it doesn't exist
+DESKTOP_FILE="$HOME/.local/share/applications/ghostty.desktop"
+if [ ! -f "$DESKTOP_FILE" ]; then
+  mkdir -p "$HOME/.local/share/applications"
+  cat > "$DESKTOP_FILE" << 'EOF'
+[Desktop Entry]
+Exec=/usr/bin/ghostty
+Name=Ghostty
+Comment=Fast GPU-accelerated terminal emulator
+NoDisplay=true
+Type=Application
+Icon=ghostty
+Categories=System;TerminalEmulator;
+X-KDE-GlobalAccel-CommandShortcut=true
+EOF
+  echo "[ezdora][kde] Arquivo desktop criado: $DESKTOP_FILE"
+fi
+
+# Step 2: Backup kglobalshortcutsrc before modifications
 SHORTCUTS_FILE="$HOME/.config/kglobalshortcutsrc"
 if [ -f "$SHORTCUTS_FILE" ] && [ ! -f "$SHORTCUTS_FILE.ezdora.bak" ]; then
   cp "$SHORTCUTS_FILE" "$SHORTCUTS_FILE.ezdora.bak"
   echo "[ezdora][kde] Backup criado: $SHORTCUTS_FILE.ezdora.bak"
 fi
 
-# Limpa atalhos conflitantes do Konsole primeiro
-$KW --file kglobalshortcutsrc --group "org.kde.konsole.desktop" --key "_launch" "none,none,Konsole"
-
-# Configura o atalho para o Ghostty de forma mais completa
-# Formato: "shortcut,default,description"
-$KW --file kglobalshortcutsrc --group "com.mitchellh.ghostty.desktop" --key "_launch" "Ctrl+Alt+T,Ctrl+Alt+T,Launch Ghostty"
-$KW --file kglobalshortcutsrc --group "com.mitchellh.ghostty.desktop" --key "_k_friendly_name" "Ghostty"
-
-# Também adiciona na seção services (alguns KDE usam isso)
-$KW --file kglobalshortcutsrc --group "services][com.mitchellh.ghostty.desktop" --key "_launch" "Ctrl+Alt+T"
-
-echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
-
-# Recarrega os atalhos globais
-if command -v qdbus6 >/dev/null 2>&1; then
-  qdbus6 org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.reloadConfig 2>/dev/null || true
-elif command -v qdbus >/dev/null 2>&1; then
-  qdbus org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.reloadConfig 2>/dev/null || true
+# Step 3: Remove/disable Konsole Ctrl+Alt+T shortcut if it exists
+if grep -q "org.kde.konsole" "$SHORTCUTS_FILE" 2>/dev/null; then
+  # Use sed to disable Konsole shortcut
+  sed -i '/\[services\]\[org.kde.konsole.desktop\]/,/^$/s/_launch=.*/_launch=none/' "$SHORTCUTS_FILE" 2>/dev/null || true
+  sed -i '/\[org.kde.konsole.desktop\]/,/^$/s/_launch=.*/_launch=none,none,Konsole/' "$SHORTCUTS_FILE" 2>/dev/null || true
+  echo "[ezdora][kde] Atalho Ctrl+Alt+T do Konsole desabilitado"
 fi
+
+# Step 4: Add Ghostty shortcut configuration
+# Check if ghostty.desktop section already exists
+if ! grep -q "\[ghostty.desktop\]" "$SHORTCUTS_FILE" 2>/dev/null; then
+  # Add the Ghostty shortcut configuration
+  cat >> "$SHORTCUTS_FILE" << 'EOF'
+
+[ghostty.desktop]
+_k_friendly_name=Ghostty
+_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal
+EOF
+  echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
+else
+  # Update existing configuration
+  sed -i '/\[ghostty.desktop\]/,/^$/s/_launch=.*/_launch=Ctrl+Alt+T,none,Launch Ghostty Terminal/' "$SHORTCUTS_FILE"
+  echo "[ezdora][kde] Atalho Ctrl+Alt+T atualizado para Ghostty"
+fi
+
+# Step 5: Restart kglobalaccel to apply changes
+echo "[ezdora][kde] Reiniciando kglobalaccel..."
+killall kglobalaccel5 2>/dev/null || killall kglobalaccel 2>/dev/null || true
+sleep 1
+if command -v kglobalaccel5 >/dev/null 2>&1; then
+  kglobalaccel5 &
+  disown
+elif command -v kglobalaccel >/dev/null 2>&1; then
+  kglobalaccel &
+  disown
+fi
+
+echo "[ezdora][kde] Configuração do atalho concluída!"
