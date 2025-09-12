@@ -38,4 +38,13 @@ else
   # Configura o atalho no arquivo kglobalshortcutsrc
   $KW --file kglobalshortcutsrc --group "services][com.mitchellh.ghostty.desktop" --key "_launch" "Ctrl+Alt+T"
   echo "[ezdora][kde] Atalho Ctrl+Alt+T configurado para Ghostty"
+  
+  # Recarrega os atalhos globais
+  if command -v kquitapp6 >/dev/null 2>&1; then
+    kquitapp6 kglobalaccel 2>/dev/null || true
+    sleep 1
+  elif command -v kquitapp5 >/dev/null 2>&1; then
+    kquitapp5 kglobalaccel 2>/dev/null || true
+    sleep 1
+  fi
 fi
