@@ -24,6 +24,7 @@ for script in "$SCRIPT_DIR/apps"/*.sh; do
   bash "$script"
 done
 
+
 ## Checagens pós-instalação e oferta de reinício
 # Caso o usuário tenha sido adicionado ao grupo docker nesta sessão,
 # a sessão atual ainda não refletirá o grupo. Oferecer reboot.

@@ -138,7 +138,6 @@ services:
     volumes:
       - win11_data:/storage
       - ${HOME}:/shared:rw
-    restart: unless-stopped
     networks:
       - win11_net
 
@@ -163,36 +162,58 @@ if ! docker compose version >/dev/null 2>&1; then
   fi
 fi
 
+# Download da imagem (sem iniciar ainda)
 (
   cd "$CONFIG_DIR"
   echo "[ezdora][docker-win11] Baixando imagem (pode demorar a primeira vez)…"
   "${compose_cmd[@]}" -f "$COMPOSE_FILE" pull || true
-  echo "[ezdora][docker-win11] Subindo o container em segundo plano…"
-  "${compose_cmd[@]}" -f "$COMPOSE_FILE" up -d
 )
 
-echo "[ezdora][docker-win11] Container criado/iniciado. Acesso:"
-echo "  - Web viewer: http://localhost:${WEB_PORT}"
-echo "  - RDP: localhost:${RDP_PORT} (usuário: ${USERNAME} / senha: ${PASSWORD})"
-
-# Open the web viewer to monitor Windows installation
-VIEW_URL="http://localhost:${WEB_PORT}"
-if command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "$VIEW_URL" >/dev/null 2>&1 || true
-elif command -v gio >/dev/null 2>&1; then
-  gio open "$VIEW_URL" >/dev/null 2>&1 || true
+# Perguntar se quer iniciar agora ou deixar para depois
+START_NOW=false
+if have gum; then
+  if gum confirm "Deseja iniciar o Windows 11 agora? (pode levar 20-40 min para instalar)"; then
+    START_NOW=true
+  fi
 else
-  python3 -c 'import webbrowser,sys; webbrowser.open(sys.argv[1])' "$VIEW_URL" >/dev/null 2>&1 || true
+  read -r -p "Iniciar Windows 11 agora? (pode levar 20-40 min) [y/N] " ans
+  [[ ${ans:-} =~ ^[Yy]$ ]] && START_NOW=true
 fi
 
-echo "[ezdora][docker-win11] Abrimos o navegador padrão para acompanhar a instalação (pode levar 20–40 min)."
+if [ "$START_NOW" = true ]; then
+  (
+    cd "$CONFIG_DIR"
+    echo "[ezdora][docker-win11] Iniciando o container…"
+    "${compose_cmd[@]}" -f "$COMPOSE_FILE" up -d
+  )
+  
+  echo "[ezdora][docker-win11] Container iniciado! Acesso:"
+  echo "  - Web viewer: http://localhost:${WEB_PORT}"
+  echo "  - RDP: localhost:${RDP_PORT} (usuário: ${USERNAME} / senha: ${PASSWORD})"
+  
+  # Open the web viewer to monitor Windows installation
+  VIEW_URL="http://localhost:${WEB_PORT}"
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$VIEW_URL" >/dev/null 2>&1 || true
+  elif command -v gio >/dev/null 2>&1; then
+    gio open "$VIEW_URL" >/dev/null 2>&1 || true
+  else
+    python3 -c 'import webbrowser,sys; webbrowser.open(sys.argv[1])' "$VIEW_URL" >/dev/null 2>&1 || true
+  fi
+  
+  echo "[ezdora][docker-win11] Abrimos o navegador padrão para acompanhar a instalação."
+else
+  echo "[ezdora][docker-win11] Container configurado mas não iniciado."
+  echo "[ezdora][docker-win11] Use os atalhos do menu ou execute:"
+  echo "  cd '$CONFIG_DIR' && docker compose up -d"
+fi
 
 # Generate a Remmina connection (if Remmina present, or still create file for later use)
 REMMINA_DIR="$HOME/.local/share/remmina"
 mkdir -p "$REMMINA_DIR"
 
-# Base64-encode password (Remmina aceita base64 simples; criptografará ao abrir)
-enc_pw=$(printf %s "$PASSWORD" | base64 -w0)
+# Para Remmina funcionar corretamente, não usar base64 - deixar em texto plano
+# O Remmina criptografará automaticamente na primeira conexão
 RFILE="$REMMINA_DIR/group_local_win11-docker_localhost-${RDP_PORT}.remmina"
 
 cat >"$RFILE" <<REM
@@ -201,7 +222,7 @@ protocol=RDP
 name=Win 11 Docker
 server=localhost:${RDP_PORT}
 username=${USERNAME}
-password=${enc_pw}
+password=${PASSWORD}
 resolution_mode=2
 window_maximize=1
 colordepth=32
@@ -209,27 +230,176 @@ ignore-tls-errors=1
 cert_ignore=1
 group=local
 drive=${HOME}/Public
+shareprinter=0
+sharesound=0
 REM
 
 echo "[ezdora][docker-win11] Conexão Remmina criada: $RFILE"
 echo "[ezdora][docker-win11] Pronto. Monitore a instalação pelo web viewer; depois conecte via Remmina."
 
-# Relembrar credenciais ao final para o usuário não esquecer
+# Exibir credenciais com cores e formatação bonita
 echo
-echo "[ezdora][docker-win11] Credenciais padrão do Windows 11 (Docker):"
-echo "  - Usuário: ${USERNAME}"
-echo "  - Senha:   ${PASSWORD}"
-echo "  - RDP:     localhost:${RDP_PORT}"
-echo "  - Web:     http://localhost:${WEB_PORT}"
+if command -v gum >/dev/null 2>&1; then
+  gum style \
+    --foreground 212 \
+    --border-foreground 212 \
+    --border double \
+    --align center \
+    --width 60 \
+    --margin "1 2" \
+    --padding "1 2" \
+    "🖥️  WINDOWS 11 DOCKER - CREDENCIAIS DE ACESSO  🖥️"
+  
+  echo
+  gum style \
+    --foreground 39 \
+    --border-foreground 39 \
+    --border rounded \
+    --padding "1 2" \
+    --margin "0 2" \
+    "👤 Usuário: ${USERNAME}" \
+    "🔑 Senha: ${PASSWORD}" \
+    "🌐 RDP: localhost:${RDP_PORT}" \
+    "🌍 Web Viewer: http://localhost:${WEB_PORT}"
+else
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🖥️  WINDOWS 11 DOCKER - CREDENCIAIS DE ACESSO"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "👤 Usuário: ${USERNAME}"
+  echo "🔑 Senha: ${PASSWORD}"
+  echo "🌐 RDP: localhost:${RDP_PORT}"
+  echo "🌍 Web Viewer: http://localhost:${WEB_PORT}"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi
 
-# Persistir credenciais em arquivo de referência
-CREDS_FILE="$CONFIG_DIR/win11-credentials.txt"
-{
-  echo "Windows 11 (Docker) - Credenciais"
-  echo "Usuário: ${USERNAME}"
-  echo "Senha:   ${PASSWORD}"
-  echo "RDP:     localhost:${RDP_PORT}"
-  echo "Web:     http://localhost:${WEB_PORT}"
-} >"$CREDS_FILE"
-chmod 600 "$CREDS_FILE" || true
-echo "[ezdora][docker-win11] Credenciais salvas em: $CREDS_FILE (permissões 600)"
+# Salvar credenciais em arquivo no home do usuário para fácil acesso
+HOME_CREDS_FILE="$HOME/Windows11-Docker-Credenciais.txt"
+CONFIG_CREDS_FILE="$CONFIG_DIR/win11-credentials.txt"
+
+# Criar conteúdo das credenciais
+CREDS_CONTENT="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖥️  WINDOWS 11 DOCKER - CREDENCIAIS DE ACESSO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 Usuário: ${USERNAME}
+🔑 Senha: ${PASSWORD}
+🌐 RDP: localhost:${RDP_PORT}
+🌍 Web Viewer: http://localhost:${WEB_PORT}
+
+📝 INSTRUÇÕES:
+- Use o Web Viewer para acompanhar a instalação do Windows (20-40 min)
+- Após a instalação, conecte via RDP usando Remmina ou outro cliente RDP
+- Pasta compartilhada: ~/Public (acessível no Windows como rede)
+
+🕒 Gerado em: $(date '+%Y-%m-%d %H:%M:%S')
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Salvar no home e no config
+echo "$CREDS_CONTENT" > "$HOME_CREDS_FILE"
+echo "$CREDS_CONTENT" > "$CONFIG_CREDS_FILE"
+
+# Definir permissões seguras
+chmod 600 "$HOME_CREDS_FILE" "$CONFIG_CREDS_FILE" 2>/dev/null || true
+
+echo
+if command -v gum >/dev/null 2>&1; then
+  gum style \
+    --foreground 46 \
+    --border-foreground 46 \
+    --border rounded \
+    --padding "0 1" \
+    --margin "0 2" \
+    "💾 Credenciais salvas em:" \
+    "📁 $HOME_CREDS_FILE" \
+    "📁 $CONFIG_CREDS_FILE"
+else
+  echo "💾 Credenciais salvas em:"
+  echo "📁 $HOME_CREDS_FILE"
+  echo "📁 $CONFIG_CREDS_FILE"
+fi
+
+# Criar atalhos do menu (arquivos .desktop)
+echo
+echo "[ezdora][docker-win11] Criando atalhos no menu do sistema..."
+
+DESKTOP_DIR="$HOME/.local/share/applications"
+mkdir -p "$DESKTOP_DIR"
+
+# Atalho para iniciar Windows 11
+START_DESKTOP="$DESKTOP_DIR/ezdora-win11-start.desktop"
+cat > "$START_DESKTOP" <<EOF
+[Desktop Entry]
+Name=🚀 Windows 11 Docker - Start
+Comment=Iniciar máquina virtual Windows 11 no Docker
+Exec=bash -c "cd \\"$CONFIG_DIR\\" && docker compose -f \\"$COMPOSE_FILE\\" up -d && notify-send \\"Windows 11 Docker\\" \\"Container iniciado! Abra o Web Viewer para acompanhar.\\" --icon=computer"
+Icon=computer
+Terminal=false
+Type=Application
+Categories=System;Utility;
+Keywords=windows;docker;vm;virtual;machine;start;
+EOF
+
+# Atalho para parar Windows 11
+STOP_DESKTOP="$DESKTOP_DIR/ezdora-win11-stop.desktop"
+cat > "$STOP_DESKTOP" <<EOF
+[Desktop Entry]
+Name=🛑 Windows 11 Docker - Stop
+Comment=Parar máquina virtual Windows 11 no Docker
+Exec=bash -c "cd \\"$CONFIG_DIR\\" && docker compose -f \\"$COMPOSE_FILE\\" down && notify-send \\"Windows 11 Docker\\" \\"Container parado com sucesso.\\" --icon=computer"
+Icon=computer
+Terminal=false
+Type=Application
+Categories=System;Utility;
+Keywords=windows;docker;vm;virtual;machine;stop;
+EOF
+
+# Atalho para abrir Web Viewer
+VIEWER_DESKTOP="$DESKTOP_DIR/ezdora-win11-viewer.desktop"
+cat > "$VIEWER_DESKTOP" <<EOF
+[Desktop Entry]
+Name=🌍 Windows 11 Docker - Web Viewer
+Comment=Abrir o visualizador web do Windows 11
+Exec=bash -c "xdg-open \\"http://localhost:${WEB_PORT}\\" || firefox \\"http://localhost:${WEB_PORT}\\" || google-chrome \\"http://localhost:${WEB_PORT}\\""
+Icon=web-browser
+Terminal=false
+Type=Application
+Categories=Network;Utility;
+Keywords=windows;docker;vm;virtual;machine;viewer;web;
+EOF
+
+# Atalho para status/controle
+STATUS_DESKTOP="$DESKTOP_DIR/ezdora-win11-status.desktop"
+cat > "$STATUS_DESKTOP" <<EOF
+[Desktop Entry]
+Name=📊 Windows 11 Docker - Status
+Comment=Ver status e controlar o Windows 11 Docker
+Exec=bash -c "cd \\"$CONFIG_DIR\\" && STATUS=\\$(docker compose -f \\"$COMPOSE_FILE\\" ps --format \\"table {{.Name}}\\t{{.Status}}\\" 2>/dev/null) && if echo \\"\\$STATUS\\" | grep -q \\"Up\\"; then notify-send \\"Windows 11 Docker\\" \\"Status: EXECUTANDO\\n\\nWeb Viewer: http://localhost:${WEB_PORT}\\nRDP: localhost:${RDP_PORT}\\" --icon=computer; else notify-send \\"Windows 11 Docker\\" \\"Status: PARADO\\n\\nUse o atalho Start para iniciar.\\" --icon=computer; fi"
+Icon=computer
+Terminal=false
+Type=Application
+Categories=System;Utility;
+Keywords=windows;docker;vm;virtual;machine;status;
+EOF
+
+# Tornar executáveis
+chmod +x "$START_DESKTOP" "$STOP_DESKTOP" "$VIEWER_DESKTOP" "$STATUS_DESKTOP" 2>/dev/null || true
+
+if command -v gum >/dev/null 2>&1; then
+  gum style \
+    --foreground 82 \
+    --border-foreground 82 \
+    --border rounded \
+    --padding "0 1" \
+    --margin "0 2" \
+    "🎯 Atalhos criados no menu:" \
+    "🚀 Windows 11 Docker - Start" \
+    "🛑 Windows 11 Docker - Stop" \
+    "🌍 Windows 11 Docker - Web Viewer" \
+    "📊 Windows 11 Docker - Status"
+else
+  echo "🎯 Atalhos criados no menu:"
+  echo "🚀 Windows 11 Docker - Start"
+  echo "🛑 Windows 11 Docker - Stop"
+  echo "🌍 Windows 11 Docker - Web Viewer"
+  echo "📊 Windows 11 Docker - Status"
+fi
