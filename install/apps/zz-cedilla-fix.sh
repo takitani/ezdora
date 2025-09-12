@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Minimal cedilla fix based on:
-# https://raw.githubusercontent.com/marcopaganini/gnome-cedilla-fix/master/fix-cedilla
-# Works across desktops (KDE/GNOME). Creates ~/.XCompose mapping 'c with acute' → cedilla.
+# Minimal cedilla fix for KDE sessions.
+# Creates ~/.XCompose mapping 'c with acute' → cedilla.
 
 LANG=${LANG:=en_US.UTF-8}
 COMPOSE_DIR="/usr/share/X11/locale"

@@ -41,4 +41,4 @@ Você pode editar as listas em `packages/dnf.txt` e `packages/flatpak.txt` antes
 
 - Chrome via repositório oficial do Google (habilitado automaticamente).
 - VLC via DNF (RPM Fusion), LocalSend e demais via Flathub, Ghostty via DNF (COPR `scottames/ghostty`).
-- Para definir o terminal padrão (Ghostty) no KDE, ajuste em Configurações do Sistema > Aplicativos Padrão (feito manualmente neste setup minimalista).
+- KDE: o script define Ghostty como terminal padrão, mapeia Ctrl+Alt+T para abrir Ghostty e ajusta as animações para "Instant" automaticamente (idempotente; pode reexecutar `bash install.sh` a qualquer momento para autocorrigir).

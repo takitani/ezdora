@@ -123,8 +123,7 @@ Name=JetBrains Toolbox
 Comment=Start JetBrains Toolbox on login
 Exec=$DEST/jetbrains-toolbox --minimize
 Terminal=false
-X-GNOME-Autostart-enabled=true
-OnlyShowIn=KDE;GNOME;XFCE;Unity;
+OnlyShowIn=KDE;
 EOF
 
 update-desktop-database "$APP_DIR" >/dev/null 2>&1 || true

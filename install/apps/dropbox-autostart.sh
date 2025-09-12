@@ -14,10 +14,8 @@ Comment=Start Dropbox at login
 TryExec=dropbox
 Exec=dropbox start -i
 Terminal=false
-OnlyShowIn=KDE;GNOME;XFCE;Unity;
-X-GNOME-Autostart-enabled=true
+OnlyShowIn=KDE;
 X-KDE-autostart-after=panel
 EOF
 
 echo "[ezdora][dropbox] Autostart criado em $AUTOSTART_DIR/dropbox.desktop"
-
