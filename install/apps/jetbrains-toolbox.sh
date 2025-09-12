@@ -32,29 +32,37 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 cd "$tmpdir"
 
-# Discover latest download URL from JetBrains releases API (robust)
+# Discover latest download URL from JetBrains releases API (with aggressive timeout)
 URL=""
+API_URL="https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release"
+
+echo "[ezdora][toolbox] Verificando última versão (timeout: 10s)..."
 if command -v python3 >/dev/null 2>&1; then
-  URL=$(python3 - <<'PY'
-import json,urllib.request
+  URL=$(timeout 10 python3 - <<'PY'
+import json,urllib.request,socket
+socket.setdefaulttimeout(8)
 u='https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release'
 data=json.load(urllib.request.urlopen(u))
 print(data['TBA'][0]['downloads']['linux']['link'])
 PY
   2>/dev/null || true)
 fi
+
 if [ -z "${URL:-}" ]; then
-  URL=$(curl -fsSL "https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release" \
-    | grep -oE 'https:[^"]+jetbrains-toolbox-[^"]+\.tar\.gz' \
-    | head -n1 || true)
+  echo "[ezdora][toolbox] Python falhou, tentando curl..."
+  URL=$(timeout 10 curl -fsSL --connect-timeout 8 --max-time 10 "$API_URL" \
+    | timeout 5 grep -oE 'https:[^"]+jetbrains-toolbox-[^"]+\.tar\.gz' \
+    | head -n1 2>/dev/null || true)
 fi
 
 if [ -z "${URL:-}" ]; then
-  echo "[ezdora][toolbox] Não foi possível detectar a URL da versão mais recente." >&2
-  exit 1
+  echo "[ezdora][toolbox] API indisponível. Usando URL de fallback..."
+  # Fallback para URL conhecida (pode ser versão mais antiga)
+  URL="https://download.jetbrains.com/toolbox/jetbrains-toolbox-2.5.2.35332.tar.gz"
 fi
 
-curl -fL --retry 3 --retry-all-errors -H 'User-Agent: Mozilla/5.0' -o toolbox.tar.gz "$URL"
+echo "[ezdora][toolbox] Baixando de: $URL"
+curl -fL --connect-timeout 15 --max-time 120 --retry 2 --retry-all-errors -H 'User-Agent: Mozilla/5.0' -o toolbox.tar.gz "$URL"
 if ! file toolbox.tar.gz | grep -qi 'gzip compressed data'; then
   echo "[ezdora][toolbox] Download inválido (não é tar.gz)." >&2
   exit 1
