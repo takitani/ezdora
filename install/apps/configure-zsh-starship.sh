@@ -1,6 +1,87 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Configure locale for KDE (interface EN, formatting BR)
+configure_kde_locale() {
+  echo "[ezdora][locale] Configurando locale (interface EN, formatação BR)..."
+  
+  # Check if locale-gen exists (for systems that use it)
+  if command -v locale-gen >/dev/null 2>&1; then
+    # Create optimized locale.gen with only necessary locales
+    if [ -f /etc/locale.gen ]; then
+      sudo tee /etc/locale.gen > /dev/null << 'EOF'
+# Locale configuration optimized by ezdora
+# Only generate necessary locales to speed up locale-gen
+
+# English (US)
+en_US.UTF-8 UTF-8
+
+# Portuguese (Brazil) 
+pt_BR.UTF-8 UTF-8
+EOF
+      echo "[ezdora][locale] Gerando locales específicos (EN_US e PT_BR)..."
+      sudo locale-gen en_US.UTF-8 pt_BR.UTF-8
+    fi
+  fi
+  
+  # Configure system locale: English interface, Brazilian formatting
+  # IMPORTANT: LC_CTYPE=pt_BR.UTF-8 is CRITICAL for cedilla to work!
+  current_lang=$(localectl status 2>/dev/null | grep "System Locale" | grep -o "LANG=[^,]*" | cut -d= -f2 || echo "")
+  current_ctype=$(localectl status 2>/dev/null | grep "System Locale" | grep -o "LC_CTYPE=[^,]*" | cut -d= -f2 || echo "")
+  
+  if [[ "$current_lang" != "en_US.UTF-8" ]] || [[ "$current_ctype" != "pt_BR.UTF-8" ]]; then
+    echo "[ezdora][locale] Configurando locale do sistema..."
+    sudo localectl set-locale LANG=en_US.UTF-8 LC_CTYPE=pt_BR.UTF-8 LC_TIME=pt_BR.UTF-8 LC_MONETARY=pt_BR.UTF-8 LC_PAPER=pt_BR.UTF-8 LC_MEASUREMENT=pt_BR.UTF-8
+    echo "[ezdora][locale] Locale configurado: LANG=en_US.UTF-8, LC_CTYPE=pt_BR.UTF-8"
+  else
+    echo "[ezdora][locale] Locale já está configurado corretamente"
+  fi
+  
+  # Configure timezone for Brazil
+  current_tz=$(timedatectl show --property=Timezone --value 2>/dev/null || echo "")
+  if [[ "$current_tz" != "America/Sao_Paulo" ]]; then
+    echo "[ezdora][locale] Configurando timezone para America/Sao_Paulo..."
+    sudo timedatectl set-timezone America/Sao_Paulo
+  else
+    echo "[ezdora][locale] Timezone já está configurado para America/Sao_Paulo"
+  fi
+  
+  # Configure KDE regional settings if in KDE session
+  if [[ "$XDG_CURRENT_DESKTOP" == "KDE" ]] || [[ "$DESKTOP_SESSION" == *"plasma"* ]]; then
+    echo "[ezdora][locale] Configurando configurações regionais do KDE..."
+    
+    # KDE uses ~/.config/plasma-localerc for regional settings
+    mkdir -p "$HOME/.config"
+    cat > "$HOME/.config/plasma-localerc" << 'EOF'
+[Formats]
+LANG=en_US.UTF-8
+LC_ADDRESS=pt_BR.UTF-8
+LC_COLLATE=en_US.UTF-8
+LC_CTYPE=pt_BR.UTF-8
+LC_MEASUREMENT=pt_BR.UTF-8
+LC_MONETARY=pt_BR.UTF-8
+LC_NAME=pt_BR.UTF-8
+LC_NUMERIC=pt_BR.UTF-8
+LC_PAPER=pt_BR.UTF-8
+LC_TELEPHONE=pt_BR.UTF-8
+LC_TIME=pt_BR.UTF-8
+useDetailed=true
+EOF
+    echo "[ezdora][locale] Configurações regionais do KDE atualizadas"
+  fi
+  
+  # Export for current session
+  export LANG=en_US.UTF-8
+  export LC_CTYPE=pt_BR.UTF-8
+  export LC_TIME=pt_BR.UTF-8
+  export LC_MONETARY=pt_BR.UTF-8
+  export LC_PAPER=pt_BR.UTF-8
+  export LC_MEASUREMENT=pt_BR.UTF-8
+}
+
+# Run locale configuration
+configure_kde_locale
+
 # Ensure zsh installed
 if ! command -v zsh >/dev/null 2>&1; then
   echo "[ezdora][zsh] zsh não instalado; instalando..."
@@ -12,7 +93,8 @@ ZSH_PATH="$(command -v zsh)"
 LOGIN_SHELL="$(getent passwd "$USER" | cut -d: -f7)"
 if [ "$LOGIN_SHELL" != "$ZSH_PATH" ]; then
   echo "[ezdora][zsh] Definindo zsh como shell padrão..."
-  chsh -s "$ZSH_PATH" "$USER" || echo "[ezdora][zsh] Não foi possível alterar shell automaticamente (talvez por ambiente não login). Faça manualmente: chsh -s $(command -v zsh)"
+  # Usa sudo para evitar pedir senha adicional (já temos cache do sudo)
+  sudo usermod -s "$ZSH_PATH" "$USER" || echo "[ezdora][zsh] Não foi possível alterar shell automaticamente. Faça manualmente: chsh -s $(command -v zsh)"
 fi
 
 mkdir -p "$HOME/.config"
