@@ -98,12 +98,26 @@ elif command -v kbuildsycoca6 >/dev/null 2>&1; then
   kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
 fi
 
-# Find lazydocker installation path
-LAZYDOCKER_PATH="$(which lazydocker 2>/dev/null || echo "")"
+# Find lazydocker installation path (check common locations)
+export PATH="$HOME/.local/bin:$PATH"  # Ensure ~/.local/bin is in PATH
+
+LAZYDOCKER_PATH=""
+if command -v lazydocker >/dev/null 2>&1; then
+  LAZYDOCKER_PATH="$(which lazydocker)"
+elif [ -f "$HOME/.local/bin/lazydocker" ]; then
+  LAZYDOCKER_PATH="$HOME/.local/bin/lazydocker"
+elif [ -f "/usr/local/bin/lazydocker" ]; then
+  LAZYDOCKER_PATH="/usr/local/bin/lazydocker"
+fi
+
 if [ -z "$LAZYDOCKER_PATH" ]; then
-  echo "[ezdora][lazydocker] Erro: lazydocker não encontrado no PATH"
+  echo "[ezdora][lazydocker] Erro: lazydocker não encontrado"
+  echo "[ezdora][lazydocker] Procurado em: PATH, ~/.local/bin, /usr/local/bin"
+  echo "[ezdora][lazydocker] Execute primeiro: install/apps/lazydocker.sh"
   exit 1
 fi
+
+echo "[ezdora][lazydocker] Lazydocker encontrado em: $LAZYDOCKER_PATH"
 
 # Choose terminal: prefer Ghostty, fallback to Konsole
 EXEC_CMD="$LAZYDOCKER_PATH"
