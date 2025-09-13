@@ -19,28 +19,14 @@ if ! command -v zsh >/dev/null 2>&1; then
     exit 1
 fi
 
-# Initialize Atuin for zsh if not already done
-if ! grep -q "# Atuin configuration" ~/.zshrc 2>/dev/null; then
-    echo "[ezdora][atuin-zsh] Configurando Atuin no ~/.zshrc..."
-    
-    # Backup existing .zshrc
-    if [ -f ~/.zshrc ]; then
-        cp ~/.zshrc ~/.zshrc.backup-atuin-$(date +%Y%m%d-%H%M%S)
-        echo "[ezdora][atuin-zsh] Backup do .zshrc criado"
-    fi
-    
-    # Add Atuin initialization to .zshrc
-    cat >> ~/.zshrc << 'EOF'
-
-# Atuin configuration - magical shell history
-if command -v atuin >/dev/null 2>&1; then
-    eval "$(atuin init zsh)"
-fi
-EOF
-    
-    echo "[ezdora][atuin-zsh] ✅ Configuração adicionada ao ~/.zshrc"
+# Check if Atuin integration is already configured
+if grep -q "atuin init zsh" ~/.zshrc 2>/dev/null; then
+    echo "[ezdora][atuin-zsh] ✅ Atuin já está configurado no .zshrc (via zsh-antigen.sh)"
 else
-    echo "[ezdora][atuin-zsh] Atuin já está configurado no ~/.zshrc"
+    echo "[ezdora][atuin-zsh] ⚠️  Atuin não detectado no .zshrc"
+    echo "[ezdora][atuin-zsh] NOTA: O script zsh-antigen.sh configura Atuin automaticamente"
+    echo "[ezdora][atuin-zsh] Se você não usa Antigen, execute manualmente:"
+    echo "[ezdora][atuin-zsh]   echo 'eval \"\$(atuin init zsh)\"' >> ~/.zshrc"
 fi
 
 # Initialize Atuin database if needed

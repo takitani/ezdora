@@ -53,20 +53,36 @@ antigen apply
 # EzDora: Enhanced ZSH Configuration
 # =====================================
 
-# History configuration (enhanced)
-export HISTFILE="$HOME/.zsh_history"
-export HISTSIZE=50000
-export SAVEHIST=50000
-setopt APPEND_HISTORY
-setopt INC_APPEND_HISTORY
-setopt SHARE_HISTORY
-setopt HIST_IGNORE_ALL_DUPS
-
-# Key bindings for history search with plugins
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-bindkey '^[OA' history-substring-search-up
-bindkey '^[OB' history-substring-search-down
+# History configuration (conditional - Atuin vs traditional Zsh)
+if command -v atuin >/dev/null 2>&1; then
+    # Atuin is available - use minimal config, let Atuin handle history
+    export HISTFILE="$HOME/.zsh_history"
+    export HISTSIZE=1000        # Small buffer for compatibility
+    export SAVEHIST=1000        # Atuin manages the real history
+    setopt HIST_IGNORE_ALL_DUPS # Avoid immediate duplicates
+    
+    # Initialize Atuin (replaces traditional history system)
+    eval "$(atuin init zsh)"
+    
+    echo "🎯 Using Atuin for intelligent shell history management"
+else
+    # Atuin not available - use enhanced traditional Zsh history
+    export HISTFILE="$HOME/.zsh_history"
+    export HISTSIZE=50000
+    export SAVEHIST=50000
+    setopt APPEND_HISTORY
+    setopt INC_APPEND_HISTORY
+    setopt SHARE_HISTORY
+    setopt HIST_IGNORE_ALL_DUPS
+    
+    # Key bindings for history search with plugins (only if no Atuin)
+    bindkey '^[[A' history-substring-search-up
+    bindkey '^[[B' history-substring-search-down
+    bindkey '^[OA' history-substring-search-up
+    bindkey '^[OB' history-substring-search-down
+    
+    echo "📚 Using enhanced Zsh history (install Atuin for better experience)"
+fi
 
 # Essential key fixes (preserve system defaults, only fix what's broken)
 bindkey '^?' backward-delete-char      # Backspace
