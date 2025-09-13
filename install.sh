@@ -40,7 +40,7 @@ echo "[ezdora] Configurando Flathub (user) se necessário..."
 flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 
 echo "[ezdora] Instalando aplicativos (scripts individuais)..."
-bash "$(dirname "$0")/install/apps.sh"
+EZDORA_AUTOMATED=true bash "$(dirname "$0")/install/apps.sh"
 
 echo "[ezdora] Limpeza opcional de pacotes órfãos..."
 sudo dnf autoremove -y || true

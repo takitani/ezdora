@@ -3,6 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+# Export automated mode for individual app scripts
+export EZDORA_AUTOMATED="${EZDORA_AUTOMATED:-false}"
+
 # Solicita senha uma vez no início e mantém cache ativo
 echo "[ezdora] Autenticação necessária para instalação de pacotes..."
 sudo -v
