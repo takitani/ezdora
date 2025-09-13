@@ -29,12 +29,24 @@ fi
 echo "Backup salvo em: $BACKUP_DIR"
 echo ""
 
+# Verificar e instalar qtpaths se necessário (para xdg-settings funcionar corretamente no KDE)
+if ! command -v qtpaths >/dev/null 2>&1; then
+    echo "📦 Instalando qt6-qttools para suporte completo ao xdg-settings..."
+    sudo dnf install -y qt6-qttools 2>/dev/null || sudo dnf install -y qt5-qttools 2>/dev/null || true
+fi
+
 echo "🔧 Configurando aplicativos padrão..."
 
 # Web Browser: Google Chrome
 if command -v google-chrome >/dev/null 2>&1; then
     echo "🌐 Configurando Google Chrome como navegador padrão..."
-    xdg-settings set default-web-browser google-chrome.desktop
+    
+    # Try xdg-settings first (suppress qtpaths errors)
+    if xdg-settings set default-web-browser google-chrome.desktop 2>/dev/null; then
+        echo "   ✓ Configurado via xdg-settings"
+    else
+        echo "   ⚠ xdg-settings falhou, usando método manual"
+    fi
     
     # Configurar via mimeapps.list também
     mkdir -p ~/.config
