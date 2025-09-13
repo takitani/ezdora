@@ -224,14 +224,14 @@ server=localhost:${RDP_PORT}
 username=${USERNAME}
 password=${PASSWORD}
 resolution_mode=2
-window_maximize=1
-colordepth=32
+colordepth=99
 ignore-tls-errors=1
 cert_ignore=1
 group=local
-drive=${HOME}/Public
-shareprinter=0
-sharesound=0
+sound=off
+network=none
+disablepasswordstoring=0
+quality=0
 REM
 
 echo "[ezdora][docker-win11] Conexão Remmina criada: $RFILE"
