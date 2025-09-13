@@ -89,6 +89,14 @@ bindkey '^?' backward-delete-char      # Backspace
 bindkey '^H' backward-delete-char      # Backspace alt
 bindkey '\e[3~' delete-char           # Delete key
 
+# Home/End keys (essential for Zsh - Bash has these by default)
+bindkey '^[[H' beginning-of-line       # Home
+bindkey '^[[F' end-of-line            # End
+bindkey '^[[1~' beginning-of-line     # Home (alternative)
+bindkey '^[[4~' end-of-line           # End (alternative)
+bindkey '^[OH' beginning-of-line      # Home (xterm)
+bindkey '^[OF' end-of-line            # End (xterm)
+
 # Autosuggestions configuration
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#666666"
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
