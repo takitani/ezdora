@@ -79,23 +79,8 @@ ScrollBarPosition=1
 BlinkingCursorEnabled=true
 EOF
 
-# Check if fixes are already applied
-echo "🔍 Verificando se as correções já foram aplicadas..."
-
-# Check if shell fixes exist
-FIXES_APPLIED=false
-if [ -f ~/.zshrc ] && grep -q "KDE Terminal fixes for Home/End keys" ~/.zshrc 2>/dev/null; then
-  FIXES_APPLIED=true
-fi
-
-if [ -f ~/.bashrc ] && grep -q "KDE Terminal fixes for Home/End keys" ~/.bashrc 2>/dev/null; then
-  FIXES_APPLIED=true
-fi
-
-if [ "$FIXES_APPLIED" = true ]; then
-  echo "✅ Correções já aplicadas anteriormente. Saindo..."
-  exit 0
-fi
+# Always apply fixes (removed idempotency check)
+echo "🔧 Aplicando correções das teclas Home/End (sempre executar para garantir funcionamento)..."
 
 # Fix 4: Reset keyboard shortcuts globally
 echo "🔧 Correção 4: Resetando atalhos globais problemáticos"
@@ -111,11 +96,12 @@ fi
 # Fix 5: Test different terminal emulator settings
 echo "🔧 Correção 5: Configurações de emulação de terminal"
 
-# Set proper TERM variables for terminals
+# Set proper TERM variables for terminals (always reapply)
 if [ -f ~/.zshrc ]; then
-  # Only add if not already present
-  if ! grep -q "KDE Terminal fixes for Home/End keys" ~/.zshrc 2>/dev/null; then
-    cat >> ~/.zshrc << 'EOF'
+  # Remove existing fixes to reapply fresh
+  sed -i '/# KDE Terminal fixes for Home\/End keys/,/^fi$/d' ~/.zshrc 2>/dev/null || true
+  
+  cat >> ~/.zshrc << 'EOF'
 
 # KDE Terminal fixes for Home/End keys
 if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
@@ -129,18 +115,17 @@ if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
     bindkey "^[[4~" end-of-line         # Alternative End
 fi
 EOF
-    echo "Adicionadas correções ao ~/.zshrc"
-  else
-    echo "Correções já existem no ~/.zshrc"
-  fi
+  echo "Correções reaplicadas ao ~/.zshrc"
 else
   echo "~/.zshrc não existe, pulando correções do ZSH"
 fi
 
-# Also try bash if it exists
+# Also apply to bash if it exists (always reapply)
 if [ -f ~/.bashrc ]; then
-  if ! grep -q "KDE Terminal fixes for Home/End keys" ~/.bashrc 2>/dev/null; then
-    cat >> ~/.bashrc << 'EOF'
+  # Remove existing fixes to reapply fresh
+  sed -i '/# KDE Terminal fixes for Home\/End keys/,/^fi$/d' ~/.bashrc 2>/dev/null || true
+  
+  cat >> ~/.bashrc << 'EOF'
 
 # KDE Terminal fixes for Home/End keys  
 if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
@@ -151,10 +136,7 @@ if [[ "$XDG_CURRENT_DESKTOP" == *"KDE"* ]]; then
     bind '"\e[4~": end-of-line'       # Alternative End
 fi
 EOF
-    echo "Adicionadas correções ao ~/.bashrc"
-  else
-    echo "Correções já existem no ~/.bashrc"
-  fi
+  echo "Correções reaplicadas ao ~/.bashrc"
 fi
 
 # Function to restart KDE session with fallbacks

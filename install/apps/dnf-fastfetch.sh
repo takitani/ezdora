@@ -21,3 +21,4 @@ fi
 
 echo "[ezdora][fastfetch] fastfetch está disponível no terminal"
 echo "[ezdora][fastfetch] Execute 'fastfetch' para ver informações do sistema"
+
