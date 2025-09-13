@@ -22,9 +22,9 @@ mkdir -p "$(dirname "$KSCREENLOCKER_CONFIG")"
 # Configure screen locking settings
 echo "[ezdora][kde-screen-locking] Aplicando configurações de bloqueio de tela..."
 
-# Auto lock after 30 minutes (1800 seconds)
+# Auto lock after 30 minutes
 kwriteconfig5 --file "$KSCREENLOCKER_CONFIG" --group "Daemon" --key "Autolock" "true"
-kwriteconfig5 --file "$KSCREENLOCKER_CONFIG" --group "Daemon" --key "Timeout" "1800"
+kwriteconfig5 --file "$KSCREENLOCKER_CONFIG" --group "Daemon" --key "Timeout" "30"
 
 # Require password immediately (no delay)
 kwriteconfig5 --file "$KSCREENLOCKER_CONFIG" --group "Daemon" --key "LockGrace" "0"
