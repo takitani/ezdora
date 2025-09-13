@@ -1,35 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install Pinta image editor via Flatpak
+# Install Pinta image editor via DNF
 
 echo "[ezdora][pinta] Instalando Pinta (editor de imagens)..."
 
-# Function to check if a Flatpak app is installed
-is_flatpak_installed() {
-    flatpak list --app 2>/dev/null | grep -q "$1" || false
+# Function to check if a DNF package is installed
+is_dnf_installed() {
+    rpm -q "$1" >/dev/null 2>&1 || false
 }
 
-# Ensure Flatpak is installed
-if ! command -v flatpak >/dev/null 2>&1; then
-    echo "[ezdora][pinta] Instalando Flatpak..."
-    sudo dnf install -y flatpak
-else
-    echo "[ezdora][pinta] Flatpak já está instalado"
-fi
-
-# Add Flathub repository if not present
-if ! flatpak remotes 2>/dev/null | grep -q flathub; then
-    echo "[ezdora][pinta] Adicionando repositório Flathub..."
-    sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-else
-    echo "[ezdora][pinta] Repositório Flathub já está configurado"
-fi
-
-# Install Pinta
-if ! is_flatpak_installed "com.github.PintaProject.Pinta"; then
+# Install Pinta via DNF
+if ! is_dnf_installed "pinta"; then
     echo "[ezdora][pinta] Instalando Pinta..."
-    sudo flatpak install -y flathub com.github.PintaProject.Pinta
+    sudo dnf install -y pinta
     echo "[ezdora][pinta] Pinta instalado com sucesso"
 else
     echo "[ezdora][pinta] Pinta já está instalado"
