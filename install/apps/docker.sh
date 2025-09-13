@@ -49,7 +49,11 @@ if ! docker ps >/dev/null 2>&1; then
   echo ""
   echo "[ezdora][docker] ⚠️  Você foi adicionado ao grupo 'docker' mas as permissões ainda não estão ativas."
   
-  if command -v gum >/dev/null 2>&1; then
+  # For automated setup - don't prompt or exec, just inform
+  if [[ "${EZDORA_AUTOMATED:-}" == "true" ]]; then
+    echo "[ezdora][docker] 🤖 Modo automatizado: permissões serão aplicadas no final da instalação"
+    echo "[ezdora][docker] 💡 Docker estará disponível após logout/login ou reinício"
+  elif command -v gum >/dev/null 2>&1; then
     echo ""
     ACTION=$(gum choose \
       --header "Como deseja proceder?" \
@@ -60,8 +64,10 @@ if ! docker ps >/dev/null 2>&1; then
     case "$ACTION" in
       "Aplicar temporariamente"*)
         echo "[ezdora][docker] Aplicando permissões temporariamente..."
-        # Preservar PATH e carregar configurações do shell atual
-        exec sg docker -c "PATH=\"$PATH\" bash --rcfile <(echo 'PS1=\"[docker-temp] \$PS1\"'; cat ~/.bashrc 2>/dev/null || cat ~/.zshrc 2>/dev/null || true)"
+        echo "[ezdora][docker] ⚠️  AVISO: Isso abrirá nova sessão bash. Use 'exit' para voltar."
+        # Remove exec - use subshell instead to not terminate installer
+        sg docker -c "PATH=\"$PATH\" bash --rcfile <(echo 'PS1=\"[docker-temp] \$PS1\"'; cat ~/.bashrc 2>/dev/null || cat ~/.zshrc 2>/dev/null || true)"
+        echo "[ezdora][docker] Voltou da sessão temporária."
         ;;
       "Instruções"*)
         gum style \
@@ -85,7 +91,7 @@ if ! docker ps >/dev/null 2>&1; then
     echo "[ezdora][docker]   1. Fazer logout e login novamente (ou reiniciar)"
     echo "[ezdora][docker]   2. Depois execute: docker ps (para testar)"
     echo ""
-    echo "[ezdora][docker] Alternativa temporária: exec sg docker -c bash"
+    echo "[ezdora][docker] Alternativa temporária: sg docker -c bash"
   fi
 else
   echo "[ezdora][docker] ✅ Docker já está funcionando corretamente!"
