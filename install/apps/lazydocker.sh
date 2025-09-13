@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+# Source helper functions
+source "$(dirname "$0")/../utils/download-helper.sh" 2>/dev/null || {
+  echo "[ezdora][lazydocker] ⚠️  Helper não encontrado, usando modo básico"
+}
 
 # Ensure ~/.local/bin is in PATH for current session
 export PATH="$HOME/.local/bin:$PATH"
@@ -9,66 +13,94 @@ if command -v lazydocker >/dev/null 2>&1; then
   exit 0
 fi
 
-echo "[ezdora][lazydocker] Instalando..."
+install_lazydocker() {
+  echo "[ezdora][lazydocker] Instalando..."
 
-# Tenta via DNF primeiro
-if ! sudo dnf install -y lazydocker 2>/dev/null; then
-  echo "[ezdora][lazydocker] Não encontrado no DNF. Usando instalação manual."
+  # Tenta via DNF primeiro
+  if ! sudo dnf install -y lazydocker 2>/dev/null; then
+    echo "[ezdora][lazydocker] Não encontrado no DNF. Usando instalação manual."
 
-  # Ensure target directory exists
-  mkdir -p "$HOME/.local/bin"
+    # Ensure target directory exists
+    mkdir -p "$HOME/.local/bin"
 
-  # Try official script first with retry
-  echo "[ezdora][lazydocker] Tentando baixar do GitHub..."
-  for attempt in 1 2 3; do
-    if curl -fsSL --connect-timeout 10 --retry 3 \
-      https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash 2>/dev/null; then
-      break
+    # Try official script first
+    echo "[ezdora][lazydocker] Tentando script de instalação oficial..."
+    if command -v command_with_retry >/dev/null 2>&1; then
+      command_with_retry \
+        "curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash" \
+        "Baixando e executando script oficial"
     else
-      echo "[ezdora][lazydocker] Tentativa $attempt falhou. Aguardando 5s..."
-      sleep 5
+      curl -fsSL --connect-timeout 10 https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash 2>/dev/null || true
     fi
-  done
 
-  # If script failed, try direct download
-  if [ ! -f "$HOME/.local/bin/lazydocker" ]; then
-    echo "[ezdora][lazydocker] Script oficial falhou. Tentando download direto..."
+    # If script failed, try direct download
+    if [ ! -f "$HOME/.local/bin/lazydocker" ]; then
+      echo "[ezdora][lazydocker] Script oficial falhou. Tentando download direto..."
 
-    # Detect architecture
-    ARCH=$(uname -m)
-    case "$ARCH" in
-      x86_64) ARCH="x86_64" ;;
-      aarch64|arm64) ARCH="arm64" ;;
-      armv7l) ARCH="armv6" ;;
-      *) echo "[ezdora][lazydocker] ❌ Arquitetura não suportada: $ARCH"; exit 1 ;;
-    esac
+      # Detect architecture
+      ARCH=$(uname -m)
+      case "$ARCH" in
+        x86_64) ARCH="x86_64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+        armv7l) ARCH="armv6" ;;
+        *)
+          echo "[ezdora][lazydocker] ⚠️  Arquitetura não suportada: $ARCH"
+          return 1
+          ;;
+      esac
 
-    # Get latest version
-    VERSION=$(curl -s --connect-timeout 10 https://api.github.com/repos/jesseduffield/lazydocker/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "0.23.3")
+      # Get latest version
+      VERSION=$(curl -s --connect-timeout 10 https://api.github.com/repos/jesseduffield/lazydocker/releases/latest 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "0.23.3")
 
-    # Download binary directly
-    URL="https://github.com/jesseduffield/lazydocker/releases/download/v${VERSION}/lazydocker_${VERSION}_Linux_${ARCH}.tar.gz"
-    echo "[ezdora][lazydocker] Baixando versão ${VERSION} para ${ARCH}..."
+      # Download binary directly
+      URL="https://github.com/jesseduffield/lazydocker/releases/download/v${VERSION}/lazydocker_${VERSION}_Linux_${ARCH}.tar.gz"
+      echo "[ezdora][lazydocker] Baixando versão ${VERSION} para ${ARCH}..."
 
-    if curl -fsSL --connect-timeout 10 --retry 3 -o /tmp/lazydocker.tar.gz "$URL" 2>/dev/null; then
-      tar -xzf /tmp/lazydocker.tar.gz -C /tmp/ lazydocker 2>/dev/null || true
-      if [ -f /tmp/lazydocker ]; then
-        mv /tmp/lazydocker "$HOME/.local/bin/"
-        chmod +x "$HOME/.local/bin/lazydocker"
-        rm -f /tmp/lazydocker.tar.gz
-        echo "[ezdora][lazydocker] ✅ Instalado manualmente em ~/.local/bin/lazydocker"
+      if command -v download_with_retry >/dev/null 2>&1; then
+        if download_with_retry "$URL" "lazydocker v${VERSION}" "/tmp/lazydocker.tar.gz"; then
+          tar -xzf /tmp/lazydocker.tar.gz -C /tmp/ lazydocker 2>/dev/null || true
+          if [ -f /tmp/lazydocker ]; then
+            mv /tmp/lazydocker "$HOME/.local/bin/"
+            chmod +x "$HOME/.local/bin/lazydocker"
+            rm -f /tmp/lazydocker.tar.gz
+            echo "[ezdora][lazydocker] ✅ Instalado manualmente em ~/.local/bin/lazydocker"
+          else
+            echo "[ezdora][lazydocker] ⚠️  Falha ao extrair arquivo"
+            return 1
+          fi
+        else
+          echo "[ezdora][lazydocker] ⚠️  Download cancelado ou falhou"
+          return 1
+        fi
       else
-        echo "[ezdora][lazydocker] ❌ ERRO: Falha ao extrair arquivo"
-        exit 1
+        # Fallback sem helper
+        if curl -fsSL --connect-timeout 10 -o /tmp/lazydocker.tar.gz "$URL" 2>/dev/null; then
+          tar -xzf /tmp/lazydocker.tar.gz -C /tmp/ lazydocker 2>/dev/null || true
+          if [ -f /tmp/lazydocker ]; then
+            mv /tmp/lazydocker "$HOME/.local/bin/"
+            chmod +x "$HOME/.local/bin/lazydocker"
+            rm -f /tmp/lazydocker.tar.gz
+            echo "[ezdora][lazydocker] ✅ Instalado em ~/.local/bin/lazydocker"
+          fi
+        else
+          echo "[ezdora][lazydocker] ⚠️  Não foi possível baixar o lazydocker"
+          return 1
+        fi
       fi
     else
-      echo "[ezdora][lazydocker] ❌ ERRO: Não foi possível baixar o lazydocker"
-      echo "[ezdora][lazydocker] 💡 Verifique sua conexão com a internet"
-      exit 1
+      echo "[ezdora][lazydocker] ✅ Instalado via script oficial"
     fi
-  else
-    echo "[ezdora][lazydocker] ✅ Instalado em ~/.local/bin/lazydocker"
   fi
+}
+
+# Execute instalação como app opcional
+if command -v optional_install >/dev/null 2>&1; then
+  optional_install "lazydocker" "install_lazydocker"
+else
+  install_lazydocker || {
+    echo "[ezdora][lazydocker] ⚠️  Instalação falhou, mas continuando com outras instalações..."
+    echo "[ezdora][lazydocker] 💡 Para tentar novamente: bash $(dirname "$0")/lazydocker.sh"
+  }
 fi
 
 # Final verification
