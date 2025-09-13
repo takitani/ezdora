@@ -5,6 +5,13 @@ set -euo pipefail
 
 echo "[ezdora][bitwarden] Instalando Bitwarden (gerenciador de senhas)..."
 
+# Remove any leftover bitwarden repo configuration from previous attempts
+REPO_FILE="/etc/yum.repos.d/bitwarden.repo"
+if [ -f "$REPO_FILE" ]; then
+    echo "[ezdora][bitwarden] Removendo configuração residual do repositório RPM..."
+    sudo rm -f "$REPO_FILE"
+fi
+
 # Function to check if RPM package is installed
 is_rpm_installed() {
     rpm -q "$1" >/dev/null 2>&1 || false
