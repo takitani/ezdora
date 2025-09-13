@@ -132,12 +132,14 @@ if command -v lazydocker >/dev/null 2>&1; then
   fi
 fi
 
-# Ensure mise activation for zsh
+# Ensure mise activation for zsh (only if mise is available)
 if ! grep -q "mise activate zsh" "$ZSHRC" 2>/dev/null; then
   {
     echo ''
     echo '# EzDora: mise activation'
-    echo 'eval "$(mise activate zsh)"'
+    echo 'if command -v mise >/dev/null 2>&1; then'
+    echo '    eval "$(mise activate zsh)"'
+    echo 'fi'
   } >> "$ZSHRC"
 fi
 
@@ -266,7 +268,9 @@ if [ "$LOGIN_SHELL" != "$ZSH_PATH" ]; then
     {
       echo ''
       echo '# EzDora: mise activation (bash fallback)'
-      echo 'eval "$(mise activate bash)"'
+      echo 'if command -v mise >/dev/null 2>&1; then'
+      echo '    eval "$(mise activate bash)"'
+      echo 'fi'
     } >> "$BASHRC"
   fi
 fi
