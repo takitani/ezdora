@@ -27,28 +27,56 @@ echo "Starting Wayland-X11 clipboard sync..."
 
 # Variáveis para controlar o estado
 last_wayland_content=""
+last_wayland_type=""
 
 while true; do
-    # Sincroniza Wayland -> X11 (para imagens)
-    if wl-paste --list-types 2>/dev/null | grep -qi "image"; then
-        current_wayland=$(wl-paste 2>/dev/null | md5sum)
-        if [ "$current_wayland" != "$last_wayland_content" ]; then
-            wl-paste 2>/dev/null | xclip -selection clipboard -t image/png 2>/dev/null
-            last_wayland_content="$current_wayland"
-            echo "$(date): Synced image Wayland -> X11"
-        fi
+    # Get current clipboard types
+    types=$(wl-paste --list-types 2>/dev/null || echo "")
+
+    if [[ -z "$types" ]]; then
+        sleep 0.3
+        continue
     fi
-    
-    # Sincroniza texto também
-    if wl-paste --list-types 2>/dev/null | grep -qi "text"; then
-        current_text=$(wl-paste -t text 2>/dev/null | md5sum)
-        if [ "$current_text" != "$last_wayland_content" ]; then
-            wl-paste -t text 2>/dev/null | xclip -selection clipboard 2>/dev/null
-            last_wayland_content="$current_text"
-        fi
+
+    # Determine content type
+    current_type=""
+    if echo "$types" | grep -qi "^image"; then
+        current_type="image"
+    elif echo "$types" | grep -qi "^text"; then
+        current_type="text"
     fi
-    
-    sleep 0.3
+
+    # Get content hash to detect changes
+    current_hash=$(wl-paste 2>/dev/null | md5sum | cut -d' ' -f1)
+
+    # Check if content changed
+    if [[ "$current_hash" != "$last_wayland_content" ]] || [[ "$current_type" != "$last_wayland_type" ]]; then
+        case "$current_type" in
+            "image")
+                # Sync image to X11 clipboard (both as image and save path)
+                temp_file="/tmp/clipboard_img_$(date +%s).png"
+                wl-paste 2>/dev/null > "$temp_file"
+
+                # Set image in X11 clipboard
+                xclip -selection clipboard -t image/png -i "$temp_file" 2>/dev/null
+
+                # Also set the path as text alternative
+                echo -n "$temp_file" | xclip -selection clipboard 2>/dev/null &
+
+                echo "$(date): Synced image Wayland -> X11 (saved to $temp_file)"
+                ;;
+            "text")
+                # Sync text to X11 clipboard
+                wl-paste -t text 2>/dev/null | xclip -selection clipboard 2>/dev/null
+                echo "$(date): Synced text Wayland -> X11"
+                ;;
+        esac
+
+        last_wayland_content="$current_hash"
+        last_wayland_type="$current_type"
+    fi
+
+    sleep 0.2
 done
 EOF
 
