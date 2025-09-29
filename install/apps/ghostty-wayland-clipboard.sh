@@ -98,15 +98,14 @@ while true; do
     if [[ "$current_hash" != "$last_wayland_content" ]] || [[ "$current_type" != "$last_wayland_type" ]]; then
         case "$current_type" in
             "image")
-                # Sync image to X11 clipboard (both as image and save path)
+                # Sync image to X11 clipboard only
                 temp_file="/tmp/clipboard_img_$(date +%s).png"
                 wl-paste 2>/dev/null > "$temp_file"
 
                 # Set image in X11 clipboard
                 xclip -selection clipboard -t image/png -i "$temp_file" 2>/dev/null
 
-                # Also set the path as text alternative
-                echo -n "$temp_file" | xclip -selection clipboard 2>/dev/null &
+                # DO NOT set the path as text - this breaks other apps like Slack
 
                 echo "$(date): Synced image Wayland -> X11 (saved to $temp_file)"
                 ;;
