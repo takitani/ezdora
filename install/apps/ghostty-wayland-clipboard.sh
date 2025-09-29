@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[ezdora][clipboard-sync] Configurando sincronização de clipboard Wayland-X11..."
+echo "[ezdora][clipboard-sync] Configurando sincronização de clipboard Wayland-X11 para Ghostty..."
 
 # Ensure required packages are installed
 if ! command -v wl-copy >/dev/null 2>&1; then
@@ -12,6 +12,51 @@ fi
 if ! command -v xclip >/dev/null 2>&1; then
   echo "[ezdora][clipboard-sync] Instalando xclip..."
   sudo dnf install -y xclip
+fi
+
+# Configure Ghostty for proper clipboard and image support
+GHOSTTY_CONFIG_DIR="$HOME/.config/ghostty"
+GHOSTTY_CONFIG="$GHOSTTY_CONFIG_DIR/config"
+
+if command -v ghostty >/dev/null 2>&1; then
+  echo "[ezdora][clipboard-sync] Configurando Ghostty para suporte a imagens..."
+
+  mkdir -p "$GHOSTTY_CONFIG_DIR"
+
+  # Add OSC52 and image support if not already present
+  if [[ -f "$GHOSTTY_CONFIG" ]]; then
+    # Check if configurations already exist
+    if ! grep -q "^osc52-read" "$GHOSTTY_CONFIG"; then
+      echo "" >> "$GHOSTTY_CONFIG"
+      echo "# Enable OSC 52 for clipboard operations" >> "$GHOSTTY_CONFIG"
+      echo "osc52-read = true" >> "$GHOSTTY_CONFIG"
+      echo "osc52-write = true" >> "$GHOSTTY_CONFIG"
+    fi
+
+    if ! grep -q "^images" "$GHOSTTY_CONFIG"; then
+      echo "" >> "$GHOSTTY_CONFIG"
+      echo "# Enable image support" >> "$GHOSTTY_CONFIG"
+      echo "images = true" >> "$GHOSTTY_CONFIG"
+    fi
+  else
+    # Create new config with all necessary settings
+    cat > "$GHOSTTY_CONFIG" <<'EOF'
+# Enable clipboard support
+clipboard-read = allow
+clipboard-write = allow
+clipboard-paste-protection = false
+copy-on-select = clipboard
+
+# Enable OSC 52 for clipboard operations
+osc52-read = true
+osc52-write = true
+
+# Enable image support
+images = true
+EOF
+  fi
+
+  echo "[ezdora][clipboard-sync] Configuração do Ghostty atualizada"
 fi
 
 # Create the sync script

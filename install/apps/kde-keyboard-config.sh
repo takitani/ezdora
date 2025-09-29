@@ -73,4 +73,16 @@ else
   echo "[ezdora][keyboard] Já possui layouts configurados incluindo variantes, mantendo configuração atual"
 fi
 
+# Desabilita o atalho Ctrl+F12 (Show Desktop) que conflita com IDEs como Rider
+echo "[ezdora][keyboard] Desabilitando atalho Ctrl+F12 (Show Desktop) para evitar conflitos com IDEs..."
+kwriteconfig6 --file kglobalshortcutsrc --group kwin --key "Show Desktop" "none,Meta+D\tCtrl+F12,Peek at Desktop"
+echo "[ezdora][keyboard] Atalho Ctrl+F12 desabilitado (mantido apenas Meta+D para Show Desktop)"
+
+# Recarrega os atalhos globais
+if command -v qdbus6 >/dev/null 2>&1; then
+  qdbus6 org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.reloadConfig 2>/dev/null || true
+elif command -v qdbus >/dev/null 2>&1; then
+  qdbus org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel.reloadConfig 2>/dev/null || true
+fi
+
 echo "[ezdora][keyboard] Configuração de teclado concluída"
