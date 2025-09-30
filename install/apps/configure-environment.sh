@@ -25,4 +25,10 @@ for profile_file in ~/.bashrc ~/.zshrc ~/.profile; do
     fi
 done
 
+# Configura política de criptografia para LEGACY
+# Necessário para ServiceStack (.NET) - a lib usa algoritmo desabilitado por padrão no Fedora
+echo "[ezdora][environment] Configurando política de criptografia para LEGACY..."
+sudo update-crypto-policies --set LEGACY
+echo "[ezdora][environment] Política de criptografia configurada"
+
 echo "[ezdora][environment] Configuração de ambiente concluída"
