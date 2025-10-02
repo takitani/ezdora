@@ -33,14 +33,14 @@ if printf '%s\n' "${PKGS[@]}" | grep -q '^google-chrome-stable$'; then
 fi
 
 # Se ghostty for solicitado, habilita o COPR correspondente
-if printf '%s\n' "${PKGS[@]}" | grep -q '^ghostty$'; then
-  echo "[ezdora][dnf] Habilitando COPR scottames/ghostty..."
-  if command -v dnf5 >/dev/null 2>&1; then
-    sudo dnf5 copr enable -y scottames/ghostty || true
-  else
-    sudo dnf copr enable -y scottames/ghostty || true
-  fi
-fi
+# if printf '%s\n' "${PKGS[@]}" | grep -q '^ghostty$'; then
+#   echo "[ezdora][dnf] Habilitando COPR scottames/ghostty..."
+#   if command -v dnf5 >/dev/null 2>&1; then
+#     sudo dnf5 copr enable -y scottames/ghostty || true
+#   else
+#     sudo dnf copr enable -y scottames/ghostty || true
+#   fi
+# fi
 
 # Se vlc for solicitado, habilita RPM Fusion (free e nonfree)
 if printf '%s\n' "${PKGS[@]}" | grep -q '^vlc$'; then

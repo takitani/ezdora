@@ -3,6 +3,8 @@
 
 git
 google-chrome-stable
-ghostty
+# ghostty
+kitty
+wl-clipboard
 vlc
 wkhtmltopdf

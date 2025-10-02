@@ -5,17 +5,34 @@ set -euo pipefail
 # Provides wrapper at ~/.local/bin/jetbrains-toolbox, .desktop, and autostart.
 
 # Skip if JetBrains Toolbox is already installed and running
-TOOLBOX_BINARY="$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox"
+TOOLBOX_BINARY="$HOME/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox"
+TOOLBOX_BINARY_OLD="$HOME/.local/share/JetBrains/Toolbox/jetbrains-toolbox"
 TOOLBOX_WRAPPER="$HOME/.local/bin/jetbrains-toolbox"
 
-if [ -x "$TOOLBOX_BINARY" ] && [ -f "$TOOLBOX_WRAPPER" ]; then
-  # Check if Toolbox is actually working (can show version)
-  if "$TOOLBOX_BINARY" --version >/dev/null 2>&1 || pgrep -f "jetbrains-toolbox" >/dev/null 2>&1; then
-    echo "[ezdora][toolbox] JetBrains Toolbox já está instalado e funcionando. Pulando."
-    exit 0
+# Check both possible binary locations (new: bin/jetbrains-toolbox, old: jetbrains-toolbox)
+if [ -x "$TOOLBOX_BINARY" ] || [ -x "$TOOLBOX_BINARY_OLD" ]; then
+  if [ -x "$TOOLBOX_BINARY" ]; then
+    EXISTING_BIN="$TOOLBOX_BINARY"
   else
-    echo "[ezdora][toolbox] JetBrains Toolbox encontrado mas não está funcionando, reinstalando..."
+    EXISTING_BIN="$TOOLBOX_BINARY_OLD"
   fi
+
+  # Check if wrapper exists and works
+  if [ -f "$TOOLBOX_WRAPPER" ] && [ -x "$TOOLBOX_WRAPPER" ]; then
+    echo "[ezdora][toolbox] JetBrains Toolbox já está instalado. Pulando."
+    exit 0
+  fi
+
+  # If binary exists but wrapper is broken, just recreate wrapper
+  echo "[ezdora][toolbox] Reparando wrapper do JetBrains Toolbox..."
+  mkdir -p "$HOME/.local/bin"
+  cat > "$TOOLBOX_WRAPPER" <<EOF
+#!/usr/bin/env bash
+exec "$EXISTING_BIN" "\$@"
+EOF
+  chmod +x "$TOOLBOX_WRAPPER"
+  echo "[ezdora][toolbox] Wrapper reparado. JetBrains Toolbox está pronto."
+  exit 0
 fi
 
 # If an old symlink exists in ~/.local/bin, remove it so we always repair to a wrapper
@@ -78,16 +95,33 @@ fi
 
 # Move to ~/.local/share/JetBrains/Toolbox
 DEST="$HOME/.local/share/JetBrains/Toolbox"
-rm -rf "$DEST"
 mkdir -p "$DEST"
+
+# Remove only the binary files, preserve user data (cache, config, logs)
+rm -f "$DEST/jetbrains-toolbox" 2>/dev/null || true
+rm -rf "$DEST/bin" 2>/dev/null || true
+rm -f "$DEST"/*.so* 2>/dev/null || true
+rm -f "$DEST"/*.svg 2>/dev/null || true
+
+# Copy new files
 cp -a "$DIR"/* "$DEST"/
 chmod +x "$DEST/jetbrains-toolbox" 2>/dev/null || true
+chmod +x "$DEST/bin/jetbrains-toolbox" 2>/dev/null || true
 
-# Determine actual binary path
-TARGET_BIN="$DEST/jetbrains-toolbox"
-if [ ! -x "$TARGET_BIN" ]; then
+# Determine actual binary path (check bin/ subdirectory first, then root)
+if [ -x "$DEST/bin/jetbrains-toolbox" ]; then
+  TARGET_BIN="$DEST/bin/jetbrains-toolbox"
+elif [ -x "$DEST/jetbrains-toolbox" ]; then
+  TARGET_BIN="$DEST/jetbrains-toolbox"
+else
+  # Fallback: search for it
   ALT=$(find "$DEST" -maxdepth 3 -type f -name 'jetbrains-toolbox' -perm -111 2>/dev/null | head -n1)
-  if [ -n "$ALT" ]; then TARGET_BIN="$ALT"; fi
+  if [ -n "$ALT" ]; then
+    TARGET_BIN="$ALT"
+  else
+    echo "[ezdora][toolbox] Binário jetbrains-toolbox não encontrado após extração." >&2
+    exit 1
+  fi
 fi
 
 # Wrapper script into ~/.local/bin (more robust than symlink)

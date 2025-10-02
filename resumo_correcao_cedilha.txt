@@ -1,0 +1,15 @@
+Resumo da correção do Cedilha (ç) no Chrome/Edge:
+
+Problema:
+- O atalho para cedilha (' + c) funcionava na maioria dos aplicativos, mas não no Chrome e no Edge.
+
+Causa:
+- Chrome/Edge e outras aplicações baseadas em Chromium usam um sistema de entrada (GTK IM Module) que, por padrão, ignora o arquivo de configuração de compose do usuário (~/.XCompose).
+
+Solução Aplicada:
+1.  O script `install/apps/zz-cedilla-fix.sh` foi executado.
+2.  Ele criou o arquivo `~/.XCompose` com a regra para `ç`.
+3.  Ele criou o arquivo `~/.config/environment.d/90-ezdora-im.conf` e adicionou a linha `GTK_IM_MODULE=xim`. Isso força o Chrome/Edge a usar um método de entrada compatível que lê o arquivo `~/.XCompose`.
+
+Ação Necessária:
+- **Fazer logout e login novamente.** As alterações nas variáveis de ambiente para aplicações gráficas só têm efeito quando uma nova sessão de desktop é iniciada.
