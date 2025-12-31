@@ -1,0 +1,359 @@
+# EzDora Zsh Configuration Template
+# Generated from system configuration on 2025-12-30
+#
+# PLACEHOLDERS (replace before use):
+#   {{GOOGLE_API_KEY}}      - Google API key (optional)
+#   {{GEMINI_API_KEY}}      - Gemini API key (optional)
+#   {{CLAUDE_UUID_*}}       - Claude organization UUIDs (optional, for multi-profile)
+#   {{OP_ACCOUNT}}          - 1Password account name (optional)
+#   {{JETBRAINS_TOOLBOX_PATH}} - JetBrains Toolbox path (default: ~/.local/share/JetBrains/Toolbox/scripts)
+#
+# To generate final .zshrc: run install/config/zshrc-setup.sh
+
+# =====================================
+# EzDora: Core Shell Setup
+# =====================================
+
+# EzDora: Starship prompt
+export PATH="$HOME/.local/bin:$PATH"
+eval "$(starship init zsh)"
+
+# EzDora: mise activation
+if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate zsh)"
+fi
+
+# EzDora: Zsh history (preservar)
+export HISTFILE="$HOME/.zsh_history"
+export HISTSIZE=50000
+export SAVEHIST=50000
+setopt APPEND_HISTORY
+setopt INC_APPEND_HISTORY
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+
+# EzDora: Zsh keybindings (consertar Backspace/Delete)
+bindkey '^?' backward-delete-char
+bindkey '^H' backward-delete-char
+bindkey '\e[3~' delete-char
+
+# EzDora: zoxide (jump) integration
+# Use default 'z' command (not --cmd cd) to avoid issues with non-interactive shells
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+fi
+
+# npm global packages
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# =====================================
+# EzDora: Antigen Plugin Manager
+# =====================================
+
+# Load Antigen
+source ~/.config/antigen/antigen.zsh
+
+# Essential plugins that Starship doesn't provide
+antigen bundle zsh-users/zsh-completions        # Extra completions
+antigen bundle zsh-users/zsh-autosuggestions    # Gray suggestions
+antigen bundle zsh-users/zsh-syntax-highlighting # Colored syntax
+antigen bundle zsh-users/zsh-history-substring-search # Prefix search
+
+# Tell Antigen that you're done
+antigen apply
+
+# =====================================
+# EzDora: Enhanced ZSH Configuration
+# =====================================
+
+# History configuration (conditional - Atuin vs traditional Zsh)
+if command -v atuin >/dev/null 2>&1; then
+    # Atuin is available - use minimal config, let Atuin handle history
+    export HISTFILE="$HOME/.zsh_history"
+    export HISTSIZE=1000        # Small buffer for compatibility
+    export SAVEHIST=1000        # Atuin manages the real history
+    setopt HIST_IGNORE_ALL_DUPS # Avoid immediate duplicates
+
+    # Initialize Atuin (replaces traditional history system)
+    eval "$(atuin init zsh)"
+else
+    # Atuin not available - use enhanced traditional Zsh history
+    export HISTFILE="$HOME/.zsh_history"
+    export HISTSIZE=50000
+    export SAVEHIST=50000
+    setopt APPEND_HISTORY
+    setopt INC_APPEND_HISTORY
+    setopt SHARE_HISTORY
+    setopt HIST_IGNORE_ALL_DUPS
+
+    # Key bindings for history search with plugins (only if no Atuin)
+    bindkey '^[[A' history-substring-search-up
+    bindkey '^[[B' history-substring-search-down
+    bindkey '^[OA' history-substring-search-up
+    bindkey '^[OB' history-substring-search-down
+
+    echo "Using enhanced Zsh history (install Atuin for better experience)"
+fi
+
+# Essential key fixes (preserve system defaults, only fix what's broken)
+bindkey '^?' backward-delete-char      # Backspace
+bindkey '^H' backward-delete-char      # Backspace alt
+bindkey '\e[3~' delete-char           # Delete key
+
+# Home/End keys (essential for Zsh - Bash has these by default)
+bindkey '^[[H' beginning-of-line       # Home
+bindkey '^[[F' end-of-line            # End
+bindkey '^[[1~' beginning-of-line     # Home (alternative)
+bindkey '^[[4~' end-of-line           # End (alternative)
+bindkey '^[OH' beginning-of-line      # Home (xterm)
+bindkey '^[OF' end-of-line            # End (xterm)
+
+# Autosuggestions configuration
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#666666"
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+
+# =====================================
+# EzDora: Tool Integrations
+# =====================================
+
+# Add essential paths
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# .NET Configuration
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0
+
+# EzDora Input Method Configuration (cedilla fix for pt-BR)
+export XCOMPOSEFILE="$HOME/.XCompose"
+
+# =====================================
+# OPTIONAL: API Keys (uncomment and fill)
+# =====================================
+# export GOOGLE_API_KEY="{{GOOGLE_API_KEY}}"
+# export GEMINI_API_KEY="{{GEMINI_API_KEY}}"
+
+# =====================================
+# EzDora: Utility Functions
+# =====================================
+
+# Gambiarra para Rider com .NET via Mise
+rider() {
+    # Detectar o caminho do dotnet dinamicamente
+    DOTNET_PATH=$(which dotnet)
+    if [ -n "$DOTNET_PATH" ]; then
+        export DOTNET_ROOT=$(dirname "$DOTNET_PATH")
+        SDK_VERSION=$(ls "$DOTNET_ROOT/sdk" | head -n1)
+        export MSBuildSDKsPath="$DOTNET_ROOT/sdk/$SDK_VERSION/Sdks"
+        export DOTNET_CLI_PATH="$DOTNET_PATH"
+        export PATH="$DOTNET_ROOT:$PATH"
+    fi
+
+    # Chamar o Rider original do Toolbox
+    "${JETBRAINS_TOOLBOX_PATH:-$HOME/.local/share/JetBrains/Toolbox/scripts}/rider" "$@"
+}
+
+# bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# tmux: cria/anexa sessão com nome da pasta atual
+tp() {
+    local session_name=$(basename "$PWD")
+    tmux new -s "$session_name" 2>/dev/null || tmux attach -t "$session_name"
+}
+
+# dev: roda ./dev.sh do projeto (busca na árvore de diretórios)
+dev() {
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        if [[ -x "$dir/dev.sh" ]]; then
+            "$dir/dev.sh" "$@"
+            return
+        fi
+        dir="$(dirname "$dir")"
+    done
+    echo "dev.sh not found" >&2
+    return 1
+}
+
+# =====================================
+# Claude Code Auto-Sync Plugins
+# =====================================
+# Sincroniza versão dos plugins automaticamente antes de iniciar
+_claude_auto_sync_plugins() {
+    local installed_plugins="$HOME/.claude/plugins/installed_plugins.json"
+    local settings_local="$HOME/.claude/settings.local.json"
+
+    [[ ! -f "$installed_plugins" || ! -f "$settings_local" ]] && return
+
+    # Verificar claude-mem
+    local installed_ver=$(jq -r '.plugins["claude-mem@thedotmack"][0].version // empty' "$installed_plugins" 2>/dev/null)
+    [[ -z "$installed_ver" ]] && return
+
+    local current_ver=$(grep -oP 'claude-mem/\K[0-9.]+' "$settings_local" 2>/dev/null | head -1)
+
+    if [[ -n "$current_ver" && "$current_ver" != "$installed_ver" ]]; then
+        echo "Syncing claude-mem: $current_ver -> $installed_ver"
+        sed -i "s|claude-mem/[0-9.]*|claude-mem/${installed_ver}|g" "$settings_local"
+
+        # Sync all profiles silently
+        for pdir in "$HOME/.claude-profiles"/*/settings.local.json; do
+            [[ -f "$pdir" ]] && sed -i "s|claude-mem/[0-9.]*|claude-mem/${installed_ver}|g" "$pdir"
+        done
+    fi
+}
+
+# Claude com auto-sync de plugins
+c() {
+    _claude_auto_sync_plugins 2>/dev/null
+    claude --dangerously-skip-permissions "$@"
+}
+
+# =====================================
+# Claude Code Profiles
+# =====================================
+# Profiles: team-max, team, personal-max, proton-max
+# Aliases: clm (team-max), clt (team), clp (personal-max), clr (proton-max)
+
+_claude_profile() {
+    local profile="$1"
+    shift  # Remove o nome do profile dos argumentos
+    local profile_dir="$HOME/.claude-profiles/$profile"
+
+    if [[ ! -d "$profile_dir" ]]; then
+        echo "Profile '$profile' not found in $profile_dir" >&2
+        return 1
+    fi
+
+    # Detectar profile atual pelo orgUUID
+    local current_uuid=""
+    if [[ -f "$HOME/.claude/settings.json" ]]; then
+        current_uuid=$(grep -oP '"forceLoginOrgUUID":\s*"\K[^"]+' "$HOME/.claude/settings.json" 2>/dev/null)
+    fi
+
+    # Mapear UUID para nome do profile
+    # CUSTOMIZE: Add your own Claude organization UUIDs here
+    local current_profile=""
+    case "$current_uuid" in
+        "{{CLAUDE_UUID_TEAM_MAX}}") current_profile="team-max" ;;
+        "{{CLAUDE_UUID_TEAM}}") current_profile="team" ;;
+        "{{CLAUDE_UUID_PERSONAL}}") current_profile="personal-max" ;;
+        "{{CLAUDE_UUID_PROTON}}") current_profile="proton-max" ;;
+    esac
+
+    # Salvar credentials do profile atual (se existir)
+    if [[ -n "$current_profile" && -f "$HOME/.claude/.credentials.json" ]]; then
+        cp "$HOME/.claude/.credentials.json" "$HOME/.claude-profiles/$current_profile/.credentials.json" 2>/dev/null
+    fi
+
+    # Salvar settings.local.json do profile atual (plugins/MCP config)
+    if [[ -n "$current_profile" && -f "$HOME/.claude/settings.local.json" ]]; then
+        cp "$HOME/.claude/settings.local.json" "$HOME/.claude-profiles/$current_profile/settings.local.json" 2>/dev/null
+    fi
+
+    # Copiar settings do novo profile
+    cp "$profile_dir/settings.json" "$HOME/.claude/settings.json"
+
+    # Restaurar settings.local.json do novo profile (plugins/MCP config)
+    if [[ -f "$profile_dir/settings.local.json" ]]; then
+        cp "$profile_dir/settings.local.json" "$HOME/.claude/settings.local.json"
+    fi
+
+    # Restaurar credentials do novo profile (se existir)
+    if [[ -f "$profile_dir/.credentials.json" ]]; then
+        cp "$profile_dir/.credentials.json" "$HOME/.claude/.credentials.json"
+    else
+        rm -f "$HOME/.claude/.credentials.json"
+    fi
+
+    # Auto-sync plugin versions antes de executar
+    _claude_auto_sync_plugins
+
+    # Executar claude
+    claude --dangerously-skip-permissions "$@"
+}
+
+# Aliases para os profiles
+alias clm='_claude_profile team-max'      # Claude Team Max
+alias clt='_claude_profile team'          # Claude Team
+alias clp='_claude_profile personal-max'  # Claude Personal
+alias clr='_claude_profile proton-max'    # Claude Proton Mail
+
+# Mostrar profile atual
+claude-profile() {
+    local current_uuid=""
+    if [[ -f "$HOME/.claude/settings.json" ]]; then
+        current_uuid=$(grep -oP '"forceLoginOrgUUID":\s*"\K[^"]+' "$HOME/.claude/settings.json" 2>/dev/null)
+    fi
+
+    # CUSTOMIZE: Add your own Claude organization UUIDs here
+    case "$current_uuid" in
+        "{{CLAUDE_UUID_TEAM_MAX}}") echo "team-max (clm)" ;;
+        "{{CLAUDE_UUID_TEAM}}") echo "team (clt)" ;;
+        "{{CLAUDE_UUID_PERSONAL}}") echo "personal-max (clp)" ;;
+        "{{CLAUDE_UUID_PROTON}}") echo "proton-max (clr)" ;;
+        *) echo "unknown: $current_uuid" ;;
+    esac
+}
+
+# Sync Claude plugin versions across profiles
+alias claude-sync='~/.claude/sync-plugin-versions.sh'
+
+# =====================================
+# OPTIONAL: Password Manager Integration
+# =====================================
+
+# 1Password CLI - function that exports session correctly
+# Uncomment and set {{OP_ACCOUNT}} to your 1Password account
+# ops() {
+#   local token
+#   token=$(op signin --account {{OP_ACCOUNT}} --raw 2>/dev/null)
+#   if [[ -n "$token" ]]; then
+#     export OP_SESSION_{{OP_ACCOUNT}}="$token"
+#     echo "1Password: logged in as $(op whoami --format json 2>/dev/null | jq -r '.email // "ok"')"
+#   else
+#     echo "1Password: login failed"
+#     return 1
+#   fi
+# }
+
+# Bitwarden CLI - function that exports session correctly
+bws() {
+  local token
+  token=$(bw unlock --raw 2>/dev/null)
+  if [[ -n "$token" ]]; then
+    export BW_SESSION="$token"
+    echo "Bitwarden: unlocked"
+  else
+    echo "Bitwarden: unlock failed (already logged in? try: bw login)"
+    return 1
+  fi
+}
+
+# =====================================
+# OPTIONAL: Custom Aliases
+# =====================================
+
+# devmon: development monitor (if installed)
+command -v devmon >/dev/null 2>&1 && alias d='devmon'
+
+# Claude Status Bar Monitor (if installed)
+command -v claude-statusbar >/dev/null 2>&1 && {
+    alias cs='claude-statusbar'
+    alias cstatus='claude-statusbar'
+}
+
+# =====================================
+# OPTIONAL: Deploy Aliases (customize for your environment)
+# =====================================
+# Example deploy alias format:
+# alias deploy-prod='dotnet publish ... && scp ... user@host:/path'
+#
+# Add your own deploy aliases in ~/.zshrc.local (loaded below if exists)
+
+# Load local customizations (not tracked in version control)
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

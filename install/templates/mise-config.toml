@@ -1,0 +1,8 @@
+[tools]
+bun = "latest"
+dotnet = "10"
+go = "latest"
+node = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["ruby"]

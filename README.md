@@ -1,44 +1,144 @@
 # EzDora (Ez Fedora)
 
-Um post-install minimalista para Fedora 42 KDE (ou superior), focado em instalar alguns apps essenciais via DNF e Flatpak, com instaladores modulares (um app por arquivo), inspirado no Omakub.
+Um post-install minimalista para **Fedora 43+ KDE**, focado em instalar apps essenciais e configurar um ambiente de desenvolvimento completo com Claude Code, mise, e ferramentas modernas.
+
+Inspirado no Omakub, com instaladores modulares (um app por arquivo).
 
 ## Como usar
 
-- Rodar localmente (clonado este repositório):
-  - `bash install.sh`
+```bash
+# Uma linha (recomendado)
+bash <(curl -fsSL https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)
 
-- Ou usar o bootstrap (clona para `~/.local/share/ezdora` e executa):
-  - `bash bootstrap.sh`
+# Ou clonado localmente
+git clone https://github.com/takitani/ezdora.git
+cd ezdora && bash install.sh
+```
 
-- Rodar remoto (uma linha, sem clonar manualmente):
-  - Padrão (HTTPS — evita prompts de SSH):
-    - `bash <(curl -fsSL https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
-    - Se quiser garantir que não use cache: `bash <(curl -fsSL "https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh?nocache=$(date +%s)")`
-  - Alternativa com wget:
-    - `bash <(wget -qO- https://raw.githubusercontent.com/takitani/ezdora/master/bootstrap.sh)`
+### Notas
+- Bootstrap clona via HTTPS (repo público), não precisa SSH
+- Idempotente: pode reexecutar a qualquer momento
 
-### Notas rápidas
-- O bootstrap clona o repositório via HTTPS (repo público). Não precisa de SSH.
+## O que instala
 
-## O que faz
+### Terminal e Shell
+- **Kitty** - Terminal moderno com suporte Wayland
+- **Zsh** - Shell com configuração avançada
+- **Starship** - Prompt customizável
+- **Antigen** - Gerenciador de plugins Zsh
+- **Atuin** - Histórico de comandos aprimorado
+- **Zoxide** - Navegação inteligente de diretórios
 
-- Verifica que está em Fedora 42+.
-- Atualiza o sistema e metadados (`dnf upgrade --refresh`).
-- Garante `git`, `curl`, `flatpak` e `dnf-plugins-core` instalados.
-- Configura Flathub (se necessário).
-- Executa scripts individuais em `install/apps/*.sh` para instalar cada app.
+### Desenvolvimento
+- **Claude Code** - AI coding assistant (npm global)
+  - MCP servers (serena, claude-mem)
+  - Multi-profile support (team, personal, etc.)
+- **Mise** - Gerenciador de versões (Node, .NET, Python, Go, etc.)
+- **Neovim** - Editor com LazyVim
+- **VS Code** - Editor (via repo Microsoft)
+- **JetBrains Toolbox** - IDEs JetBrains
+- **Docker** - Containers
 
-## Apps padrão incluídos
+### Ferramentas CLI
+- **uv** - Gerenciador de pacotes Python (rápido)
+- **Bitwarden CLI** - Gerenciador de senhas
+- **Lazydocker** - UI para Docker
+- **Git, curl, wget, htop, tree** - Essenciais
 
-- DNF: curl, wget, git, vim, htop, tree, unzip, zip, xclip, wl-clipboard, zsh, starship, google-chrome-stable (habilita repo Google), ghostty (habilita COPR `scottames/ghostty`), vlc (habilita RPM Fusion)
-- Flatpak: LocalSend (`org.localsend.localsend_app`), ZapZap (`com.rtosta.zapzap`), Discord (`com.discordapp.Discord`), Obsidian (`md.obsidian.Obsidian`), Mission Center (`io.missioncenter.MissionCenter`), Postman (`com.getpostman.Postman`), Slack (`com.slack.Slack`)
-- VS Code: via DNF (`code`) com repositório oficial da Microsoft
-- Mise: via script oficial (`https://mise.jdx.dev/install.sh`)
+### Apps Desktop (Flatpak)
+- LocalSend, Discord, Slack, Spotify
+- Obsidian, Postman, Mission Center
+- ZapZap (WhatsApp), Telegram
 
-Você pode editar as listas em `packages/dnf.txt` e `packages/flatpak.txt` antes de rodar para ajustar.
+### Configurações KDE
+- Kitty como terminal padrão
+- Ctrl+Alt+T para abrir terminal
+- Animações configuradas para "Instant"
+- Cedilla fix para pt-BR (ç via apostrophe+c)
 
-## Observações
+## Estrutura
 
-- Chrome via repositório oficial do Google (habilitado automaticamente).
-- VLC via DNF (RPM Fusion), LocalSend e demais via Flathub, Ghostty via DNF (COPR `scottames/ghostty`).
-- KDE: o script define Ghostty como terminal padrão, mapeia Ctrl+Alt+T para abrir Ghostty e ajusta as animações para "Instant" automaticamente (idempotente; pode reexecutar `bash install.sh` a qualquer momento para autocorrigir).
+```
+ezdora/
+├── install.sh              # Script principal
+├── bootstrap.sh            # Instalação remota
+├── install/
+│   ├── apps/               # Scripts individuais por app
+│   ├── config/             # Scripts de configuração
+│   └── templates/          # Templates (zshrc, starship, etc.)
+├── packages/
+│   ├── dnf.txt             # Pacotes DNF
+│   └── flatpak.txt         # Apps Flatpak
+└── archive/                # Scripts obsoletos (Ghostty, etc.)
+```
+
+## Claude Code Setup
+
+O EzDora inclui setup completo para Claude Code:
+
+```bash
+# Após instalação
+claude auth                 # Autenticar
+claude                      # Iniciar
+
+# Multi-profile (se configurado)
+clm                         # Claude Team Max
+clt                         # Claude Team
+clp                         # Claude Personal
+claude-profile              # Mostrar profile atual
+```
+
+### MCP Servers
+- **serena** - Navegação semântica de código
+- **claude-mem** - Memória/contexto
+
+### Configuração de Profiles
+
+Edite `~/.claude-profiles/*/settings.json` com seus UUIDs de organização:
+- Encontre em: https://console.anthropic.com/settings/organization
+
+## Templates
+
+O EzDora usa templates com placeholders para configuração:
+
+| Template | Descrição |
+|----------|-----------|
+| `zshrc.template` | Configuração Zsh completa |
+| `starship.toml` | Prompt Starship |
+| `mise-config.toml` | Versões de ferramentas |
+| `claude/*.json` | Settings do Claude Code |
+
+Placeholders suportados:
+- `{{CLAUDE_UUID_*}}` - UUIDs de organização Claude
+- `{{GOOGLE_API_KEY}}` - API key Google/Gemini
+- `{{OP_ACCOUNT}}` - Conta 1Password
+
+## Customização
+
+### Adicionar pacotes
+Edite antes de instalar:
+- `packages/dnf.txt` - Pacotes DNF
+- `packages/flatpak.txt` - Apps Flatpak
+
+### Configurações locais
+- `~/.zshrc.local` - Aliases e funções customizadas (auto-carregado)
+- `~/.ezdora-config` - Variáveis para setup não-interativo
+
+### Ferramentas opcionais (não incluídas)
+- **devmon** - Monitor de desenvolvimento (ferramenta interna)
+- **terraform** - Infrastructure as Code
+- **flarectl** - Cloudflare CLI
+
+## Requisitos
+
+- Fedora 43 ou superior
+- KDE Plasma
+- Conexão internet
+
+## Changelog
+
+Ver [CHANGELOG.md](CHANGELOG.md)
+
+## Contribuindo
+
+Ver [AGENTS.md](AGENTS.md) para guidelines de desenvolvimento.

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(systemctl:*)",
+      "Bash(chmod:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": false,
+  "enabledMcpjsonServers": [],
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true
+  },
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--project",
+        "."
+      ]
+    }
+  }
+}

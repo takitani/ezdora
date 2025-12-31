@@ -16,10 +16,10 @@ if [ "${ID:-}" != "fedora" ]; then
   exit 1
 fi
 
-# Verifica versão (Fedora 42+)
+# Verifica versão (Fedora 43+)
 VER=${VERSION_ID%%.*}
-if [ -z "$VER" ] || [ "$VER" -lt 42 ]; then
-  echo "[ezdora] Requer Fedora 42 ou superior. Detectado: ${VERSION_ID:-desconhecido}" >&2
+if [ -z "$VER" ] || [ "$VER" -lt 43 ]; then
+  echo "[ezdora] Requer Fedora 43 ou superior. Detectado: ${VERSION_ID:-desconhecido}" >&2
   exit 1
 fi
 
