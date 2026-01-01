@@ -24,6 +24,12 @@ case "$ARCH" in
   *) echo "[ezdora][1password-cli] Unsupported architecture: $ARCH"; exit 1 ;;
 esac
 
+# Check for unzip dependency
+if ! command -v unzip >/dev/null 2>&1; then
+  echo "[ezdora][1password-cli] Installing unzip dependency..."
+  sudo dnf install -y unzip
+fi
+
 # Download latest release from 1Password
 echo "[ezdora][1password-cli] Downloading from 1Password..."
 DOWNLOAD_URL="https://cache.agilebits.com/dist/1P/op2/pkg/v2.30.0/op_linux_${OP_ARCH}_v2.30.0.zip"

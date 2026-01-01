@@ -33,15 +33,33 @@ log() {
     echo "[$(date '+%H:%M:%S')] $1" >> "$LOGFILE"
 }
 
+get_op_account() {
+    # Try to get account from config file first
+    if [[ -f "$HOME/.ezdora-config" ]]; then
+        local account=$(grep -oP '^OP_ACCOUNT="\K[^"]+' "$HOME/.ezdora-config" 2>/dev/null)
+        [[ -n "$account" ]] && echo "$account" && return
+    fi
+    # Fallback: get first configured account from op CLI
+    op account list --format=json 2>/dev/null | jq -r '.[0].shorthand // empty' 2>/dev/null
+}
+
 keepalive_loop() {
     log "Keepalive daemon started (PID $$)"
+    local account=$(get_op_account)
+
+    if [[ -z "$account" ]]; then
+        log "ERROR: No 1Password account found. Configure OP_ACCOUNT in ~/.ezdora-config"
+        exit 1
+    fi
+
+    log "Using 1Password account: $account"
 
     while true; do
         # 1Password keepalive
         if [[ -f "$HOME/.op_session" ]]; then
             session=$(cat "$HOME/.op_session")
-            # Try to get account name from session file or use default
-            if OP_SESSION_exatodigital="$session" op whoami --account exatodigital &>/dev/null; then
+            # Use dynamically detected account
+            if eval "OP_SESSION_${account}=\"\$session\" op whoami --account \"\$account\"" &>/dev/null; then
                 log "1Password: session extended"
             else
                 log "1Password: session expired (run 'ops' to renew)"
