@@ -49,14 +49,20 @@ if [ "${EZDORA_AUTOMATED:-}" != "true" ] && [ -z "${CLAUDE_UUID_TEAM_MAX:-}" ]; 
   echo "Leave blank to skip (you can edit ~/.zshrc later)"
   echo ""
 
-  # Claude UUIDs (optional)
   if command -v gum >/dev/null 2>&1; then
+    # 1Password account (for CLI integration)
+    echo "1Password account name (e.g., 'myteam' from myteam.1password.com):"
+    OP_ACCOUNT=$(gum input --placeholder "1Password account (optional)" 2>/dev/null || echo "")
+
+    # Claude UUIDs (optional)
+    echo ""
     echo "Claude organization UUIDs (from console.anthropic.com/settings/organization):"
     CLAUDE_UUID_TEAM_MAX=$(gum input --placeholder "Team Max UUID (optional)" 2>/dev/null || echo "")
     CLAUDE_UUID_TEAM=$(gum input --placeholder "Team UUID (optional)" 2>/dev/null || echo "")
     CLAUDE_UUID_PERSONAL=$(gum input --placeholder "Personal UUID (optional)" 2>/dev/null || echo "")
     CLAUDE_UUID_PROTON=$(gum input --placeholder "Additional UUID (optional)" 2>/dev/null || echo "")
   else
+    read -p "1Password account (optional, e.g., 'myteam'): " OP_ACCOUNT
     read -p "Claude Team Max UUID (optional): " CLAUDE_UUID_TEAM_MAX
     read -p "Claude Team UUID (optional): " CLAUDE_UUID_TEAM
     read -p "Claude Personal UUID (optional): " CLAUDE_UUID_PERSONAL
