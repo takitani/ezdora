@@ -6,11 +6,16 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # Export automated mode for individual app scripts
 export EZDORA_AUTOMATED="${EZDORA_AUTOMATED:-false}"
 
-# Solicita senha uma vez no início e mantém cache ativo
-echo "[ezdora] Autenticação necessária para instalação de pacotes..."
-sudo -v
+# Verifica se sudo está disponível (NOPASSWD ou cache válido)
+if sudo -n true 2>/dev/null; then
+  echo "[ezdora] Sudo NOPASSWD disponível, continuando..."
+else
+  # Modo interativo: solicita senha uma vez
+  echo "[ezdora] Autenticação necessária para instalação de pacotes..."
+  sudo -v
+fi
 
-# Mantém o cache de sudo ativo em background durante a execução
+# Mantém o cache de sudo ativo em background durante a execução (só se não for NOPASSWD)
 (while true; do sudo -n true; sleep 50; done 2>/dev/null) &
 SUDO_REFRESH_PID=$!
 
