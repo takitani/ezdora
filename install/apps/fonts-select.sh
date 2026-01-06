@@ -20,6 +20,11 @@ fi
 # If a config already exists, ask to keep; default is keep if no TUI picker available
 if [ -n "$CURRENT_FAMILY" ] || [ -n "$CURRENT_SIZE" ]; then
   KEEP=1
+  # In automated mode or without TTY, always keep existing config
+  if [ "${EZDORA_AUTOMATED:-false}" = "true" ] || [ ! -t 0 ]; then
+    echo "[ezdora][fonts] Modo automatizado: mantendo fonte atual '$CURRENT_FAMILY'."
+    exit 0
+  fi
   if command -v gum >/dev/null 2>&1; then
     if gum confirm "Manter fonte atual '$CURRENT_FAMILY' tamanho ${CURRENT_SIZE:-?}?"; then KEEP=1; else KEEP=0; fi
   elif command -v fzf >/dev/null 2>&1; then
