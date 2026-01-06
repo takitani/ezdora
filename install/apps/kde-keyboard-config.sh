@@ -4,7 +4,7 @@ set -euo pipefail
 echo "[ezdora][keyboard] Configurando layouts de teclado..."
 
 # Verifica se está no KDE
-if [[ "$XDG_CURRENT_DESKTOP" != "KDE" ]] && [[ "$DESKTOP_SESSION" != *"plasma"* ]]; then
+if [[ "${XDG_CURRENT_DESKTOP:-}" != "KDE" ]] && [[ "${DESKTOP_SESSION:-}" != *"plasma"* ]]; then
   echo "[ezdora][keyboard] Não está rodando KDE, pulando configuração de teclado"
   exit 0
 fi

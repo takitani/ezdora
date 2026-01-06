@@ -42,7 +42,7 @@ EOF
 fi
 
 # Configure for KDE session specifically
-if [[ "$XDG_CURRENT_DESKTOP" == "KDE" ]] || [[ "$DESKTOP_SESSION" == *"plasma"* ]]; then
+if [[ "${XDG_CURRENT_DESKTOP:-}" == "KDE" ]] || [[ "${DESKTOP_SESSION:-}" == *"plasma"* ]]; then
   KDE_ENV_FILE="$HOME/.config/plasma-workspace/env/ezdora-im.sh"
   mkdir -p "$(dirname "$KDE_ENV_FILE")"
 

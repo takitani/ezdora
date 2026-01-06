@@ -4,7 +4,7 @@ set -euo pipefail
 echo "[ezdora][kde-animations] Configurando animações do KDE para Instant (sem animações)..."
 
 # Verifica se está no KDE
-if [ "$XDG_CURRENT_DESKTOP" != "KDE" ]; then
+if [ "${XDG_CURRENT_DESKTOP:-}" != "KDE" ]; then
   echo "[ezdora][kde-animations] Não está rodando KDE, pulando configuração de animações"
   exit 0
 fi
