@@ -40,6 +40,7 @@ if [ ! -d "$HOME/.claude" ]; then
   mkdir -p "$HOME/.claude"
   mkdir -p "$HOME/.claude/plugins"
   mkdir -p "$HOME/.claude/projects"
+  mkdir -p "$HOME/.claude/commands"
 
   # Copy settings template if available
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -49,6 +50,9 @@ if [ ! -d "$HOME/.claude" ]; then
     cp "$TEMPLATES_DIR/settings.json.template" "$HOME/.claude/settings.json"
     echo "[ezdora][claude-code] Copied default settings.json"
   fi
+else
+  # Ensure commands directory exists even if ~/.claude already exists
+  mkdir -p "$HOME/.claude/commands"
 fi
 
 # Create isolated profiles with shared projects directory
@@ -71,17 +75,33 @@ if [ -d "$TEMPLATES_DIR/profiles" ]; then
       mkdir -p "$profile_dir"
       cp "$profile_template" "$profile_dir/settings.json"
 
-      # Create shared projects symlink (all profiles share ~/.claude/projects)
+      # Create shared symlinks (all profiles share ~/.claude/projects and ~/.claude/commands)
       ln -sf "$HOME/.claude/projects" "$profile_dir/projects"
-    elif [ ! -L "$profile_dir/projects" ]; then
-      # Existing profile without symlink - migrate and create symlink
-      if [ -d "$profile_dir/projects" ]; then
-        echo "[ezdora][claude-code] Migrating $profile_name projects to shared directory..."
-        cp -rn "$profile_dir/projects"/* "$HOME/.claude/projects"/ 2>/dev/null || true
-        rm -rf "$profile_dir/projects"
+      ln -sf "$HOME/.claude/commands" "$profile_dir/commands"
+    else
+      # Existing profile - ensure symlinks exist
+
+      # Projects symlink
+      if [ ! -L "$profile_dir/projects" ]; then
+        if [ -d "$profile_dir/projects" ]; then
+          echo "[ezdora][claude-code] Migrating $profile_name projects to shared directory..."
+          cp -rn "$profile_dir/projects"/* "$HOME/.claude/projects"/ 2>/dev/null || true
+          rm -rf "$profile_dir/projects"
+        fi
+        ln -sf "$HOME/.claude/projects" "$profile_dir/projects"
+        echo "[ezdora][claude-code] Created shared projects symlink for: $profile_name"
       fi
-      ln -sf "$HOME/.claude/projects" "$profile_dir/projects"
-      echo "[ezdora][claude-code] Created shared projects symlink for: $profile_name"
+
+      # Commands symlink (for global skills/commands)
+      if [ ! -L "$profile_dir/commands" ]; then
+        if [ -d "$profile_dir/commands" ]; then
+          # Migrate any existing commands
+          cp -rn "$profile_dir/commands"/* "$HOME/.claude/commands"/ 2>/dev/null || true
+          rm -rf "$profile_dir/commands"
+        fi
+        ln -sf "$HOME/.claude/commands" "$profile_dir/commands"
+        echo "[ezdora][claude-code] Created shared commands symlink for: $profile_name"
+      fi
     fi
   done
 fi

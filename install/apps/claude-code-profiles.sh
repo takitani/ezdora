@@ -13,6 +13,10 @@ fi
 
 echo "[ezdora][claude-profiles] Creating profile directories..."
 
+# Ensure base directories exist for shared resources
+mkdir -p "$HOME/.claude/projects"
+mkdir -p "$HOME/.claude/commands"
+
 # Create profile directories
 mkdir -p "$PROFILES_DIR/team-max"
 mkdir -p "$PROFILES_DIR/team"
@@ -23,15 +27,21 @@ mkdir -p "$PROFILES_DIR/proton-max"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES_DIR="$SCRIPT_DIR/../templates/claude/profiles"
 
-# Copy profile templates if they exist
-if [ -d "$TEMPLATES_DIR" ]; then
-  for profile in team-max team personal-max proton-max; do
-    if [ -f "$TEMPLATES_DIR/${profile}.json" ]; then
-      cp "$TEMPLATES_DIR/${profile}.json" "$PROFILES_DIR/${profile}/settings.json"
-      echo "[ezdora][claude-profiles] Created profile: $profile"
-    fi
-  done
-fi
+# Copy profile templates and create shared symlinks
+for profile in team-max team personal-max proton-max; do
+  profile_dir="$PROFILES_DIR/$profile"
+
+  # Copy settings template if available
+  if [ -d "$TEMPLATES_DIR" ] && [ -f "$TEMPLATES_DIR/${profile}.json" ]; then
+    cp "$TEMPLATES_DIR/${profile}.json" "$profile_dir/settings.json"
+  fi
+
+  # Create shared symlinks (projects and commands)
+  [ ! -L "$profile_dir/projects" ] && ln -sf "$HOME/.claude/projects" "$profile_dir/projects"
+  [ ! -L "$profile_dir/commands" ] && ln -sf "$HOME/.claude/commands" "$profile_dir/commands"
+
+  echo "[ezdora][claude-profiles] Created profile: $profile (with shared projects/commands)"
+done
 
 # Create sync-plugin-versions.sh helper script
 cat > "$HOME/.claude/sync-plugin-versions.sh" << 'SYNCEOF'
