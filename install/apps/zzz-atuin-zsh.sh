@@ -5,11 +5,11 @@ set -euo pipefail
 
 echo "[ezdora][atuin-zsh] Configurando integração Atuin + Zsh..."
 
-# Check if Atuin is installed
+# Check if Atuin is installed (optional - skip if not available)
 if ! command -v atuin >/dev/null 2>&1; then
-    echo "[ezdora][atuin-zsh] ERRO: Atuin não está instalado"
-    echo "[ezdora][atuin-zsh] Execute primeiro: install/apps/atuin.sh"
-    exit 1
+    echo "[ezdora][atuin-zsh] Atuin não está instalado, pulando configuração"
+    echo "[ezdora][atuin-zsh] Para instalar depois: install/apps/zzz-atuin.sh"
+    exit 0
 fi
 
 # Check if Zsh is installed
