@@ -47,7 +47,7 @@ EOF
   fi
   
   # Configure KDE regional settings if in KDE session
-  if [[ "$XDG_CURRENT_DESKTOP" == "KDE" ]] || [[ "$DESKTOP_SESSION" == *"plasma"* ]]; then
+  if [[ "${XDG_CURRENT_DESKTOP:-}" == "KDE" ]] || [[ "${DESKTOP_SESSION:-}" == *"plasma"* ]]; then
     echo "[ezdora][locale] Configurando configurações regionais do KDE..."
     
     # KDE uses ~/.config/plasma-localerc for regional settings
