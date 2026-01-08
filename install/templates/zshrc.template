@@ -306,12 +306,12 @@ alias claude-sync='~/.claude/sync-plugin-versions.sh'
 # =====================================
 # Password Managers (1Password + Bitwarden)
 # =====================================
-# Sessions are persisted to files for sharing between shells and Claude Code
-# Usage: ops (1Password), bws (Bitwarden) - unlocks and saves session
-# Claude Code uses sessions automatically via bw-exec and op-exec
+# 1Password: uses app integration (requires "Unlock using system authentication" enabled)
+# Bitwarden: uses session files
+# Usage: ops (1Password), bws (Bitwarden)
 
-# 1Password CLI - unlock and persist session
-# Set {{OP_ACCOUNT}} to your 1Password account name
+# 1Password CLI - signin manual + keepalive
+# Set {{OP_ACCOUNT}} to your 1Password account shorthand
 ops() {
   local token session_file="$HOME/.op_session"
   echo "Authenticating 1Password..."
@@ -320,8 +320,9 @@ ops() {
     export OP_SESSION_{{OP_ACCOUNT}}="$token"
     echo "$token" > "$session_file"
     chmod 600 "$session_file"
-    echo "1Password: logged in as $(op whoami --format json 2>/dev/null | jq -r '.email // "ok"')"
-    echo "  Session saved to $session_file (valid ~30min, kept alive by daemon)"
+    echo "1Password: logged in as $(OP_SESSION_{{OP_ACCOUNT}}="$token" op whoami --format json 2>/dev/null | jq -r '.email // "ok"')"
+    # Start keepalive daemon
+    pw-keepalive start 2>/dev/null || true
   else
     echo "1Password: login failed"
     return 1
@@ -338,7 +339,8 @@ bws() {
     echo "$token" > "$session_file"
     chmod 600 "$session_file"
     echo "Bitwarden: unlocked"
-    echo "  Session saved to $session_file (does not expire)"
+    # Start keepalive daemon
+    pw-keepalive start 2>/dev/null || true
   else
     echo "Bitwarden: unlock failed (already logged in? try: bw login)"
     return 1
@@ -348,11 +350,6 @@ bws() {
 # Load session from file (for scripts/Claude Code)
 _load_bw_session() {
   local session_file="$HOME/.bw_session"
-  [[ -f "$session_file" ]] && cat "$session_file"
-}
-
-_load_op_session() {
-  local session_file="$HOME/.op_session"
   [[ -f "$session_file" ]] && cat "$session_file"
 }
 
@@ -368,17 +365,32 @@ bw-exec() {
 
 # Execute op command with persisted session
 op-exec() {
-  local session=$(_load_op_session)
-  if [[ -z "$session" ]]; then
+  local session_file="$HOME/.op_session"
+  if [[ ! -f "$session_file" ]]; then
     echo "No 1Password session. Run 'ops' first." >&2
     return 1
   fi
+  local session=$(cat "$session_file")
   OP_SESSION_{{OP_ACCOUNT}}="$session" op "$@"
 }
 
 # Check session status
 pw-status() {
   echo "=== Password Managers Status ==="
+
+  # 1Password (session file)
+  local op_session_file="$HOME/.op_session"
+  if [[ -f "$op_session_file" ]]; then
+    local op_session=$(cat "$op_session_file")
+    if OP_SESSION_{{OP_ACCOUNT}}="$op_session" op whoami --account {{OP_ACCOUNT}} &>/dev/null; then
+      local email=$(OP_SESSION_{{OP_ACCOUNT}}="$op_session" op whoami --format json 2>/dev/null | jq -r '.email // "ok"')
+      echo "1Password: session valid ($email)"
+    else
+      echo "1Password: session expired - run 'ops'"
+    fi
+  else
+    echo "1Password: no session - run 'ops'"
+  fi
 
   # Bitwarden
   local bw_session=$(_load_bw_session)
@@ -392,34 +404,16 @@ pw-status() {
     echo "Bitwarden: no session - run 'bws'"
   fi
 
-  # 1Password
-  local op_session=$(_load_op_session)
-  if [[ -n "$op_session" ]]; then
-    if OP_SESSION_{{OP_ACCOUNT}}="$op_session" op whoami --account {{OP_ACCOUNT}} &>/dev/null; then
-      echo "1Password: session valid"
-    else
-      echo "1Password: session expired - run 'ops'"
-    fi
-  else
-    echo "1Password: no session - run 'ops'"
-  fi
-
   # Keepalive daemon
   echo ""
   pw-keepalive status 2>/dev/null || echo "Keepalive: not installed"
 }
 
-# Start sessions + keepalive daemon (daily routine)
+# Start sessions
 pw-start() {
   echo "Starting password manager sessions..."
   echo ""
-
-  # 1Password first (most used)
-  if ops; then
-    # Start keepalive automatically
-    pw-keepalive start 2>/dev/null || true
-  fi
-
+  ops
   echo ""
   echo "Bitwarden: run 'bws' separately if needed"
 }

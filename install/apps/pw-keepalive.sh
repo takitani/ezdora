@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # pw-keepalive - Password Manager Session Keepalive Daemon
-# Keeps 1Password CLI sessions alive by pinging periodically
+# Keeps 1Password and Bitwarden CLI sessions alive by pinging periodically
 
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -22,12 +22,11 @@ mkdir -p "$HOME/.local/bin"
 cat > "$INSTALL_PATH" << 'KEEPALIVE_SCRIPT'
 #!/usr/bin/env bash
 # Password Manager Keepalive Daemon
-# Keeps 1Password session alive by pinging every 20 minutes
-# Bitwarden doesn't need keepalive (session doesn't auto-expire)
+# Keeps 1Password and Bitwarden sessions alive by pinging periodically
 
 PIDFILE="$HOME/.pw-keepalive.pid"
 LOGFILE="$HOME/.pw-keepalive.log"
-INTERVAL=1200  # 20 minutes in seconds
+INTERVAL=600  # 10 minutes (1Password expires in ~30min)
 
 log() {
     echo "[$(date '+%H:%M:%S')] $1" >> "$LOGFILE"
@@ -48,21 +47,30 @@ keepalive_loop() {
     local account=$(get_op_account)
 
     if [[ -z "$account" ]]; then
-        log "ERROR: No 1Password account found. Configure OP_ACCOUNT in ~/.ezdora-config"
-        exit 1
+        log "WARNING: No 1Password account found. Only Bitwarden will be kept alive."
+    else
+        log "Using 1Password account: $account"
     fi
-
-    log "Using 1Password account: $account"
 
     while true; do
         # 1Password keepalive
-        if [[ -f "$HOME/.op_session" ]]; then
+        if [[ -n "$account" && -f "$HOME/.op_session" ]]; then
             session=$(cat "$HOME/.op_session")
-            # Use dynamically detected account
-            if eval "OP_SESSION_${account}=\"\$session\" op whoami --account \"\$account\"" &>/dev/null; then
+            # 'op vault list' reads data and extends the session
+            if eval "OP_SESSION_${account}=\"\$session\" op vault list --format json --account \"\$account\"" &>/dev/null; then
                 log "1Password: session extended"
             else
                 log "1Password: session expired (run 'ops' to renew)"
+            fi
+        fi
+
+        # Bitwarden keepalive
+        if [[ -f "$HOME/.bw_session" ]]; then
+            session=$(cat "$HOME/.bw_session")
+            if BW_SESSION="$session" bw sync --quiet 2>/dev/null; then
+                log "Bitwarden: session extended"
+            else
+                log "Bitwarden: session expired (run 'bws' to renew)"
             fi
         fi
 
@@ -102,8 +110,8 @@ case "${1:-}" in
     status)
         if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
             echo "Keepalive running (PID $(cat "$PIDFILE"))"
-            echo "  Last 3 logs:"
-            tail -3 "$LOGFILE" 2>/dev/null | sed 's/^/  /'
+            echo "  Last 5 logs:"
+            tail -5 "$LOGFILE" 2>/dev/null | sed 's/^/  /'
         else
             echo "Keepalive not running"
         fi
